@@ -70,10 +70,10 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.base_ref == 'main'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          PROJECT_KEY: fga-eps-mds_2026-1-AnatoQuizUp-WEB
+          PROJECT_KEY: fga-eps-mds_2026-2-AnatoQuizUp-WEB
         run: |
-          # Nome: fga-eps-mds-2026_1_UNB-AnatoQuizUp-WEB-MM-DD-YYYY-HH-MM-SS-vX.Y.Z.json
-          SEMESTER="2026_1"
+          # Nome: fga-eps-mds-2026_2_UNB-AnatoQuizUp-WEB-MM-DD-YYYY-HH-MM-SS-vX.Y.Z.json
+          SEMESTER="2026_2"
           PROJECT_NAME="AnatoQuizUp"
           REPO_NAME="WEB"
           DATE_HORA=$(date -u +"%m-%d-%Y-%H-%M-%S")

@@ -65,7 +65,7 @@ jobs:
       - name: Exportar metrics.json
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          PROJECT_KEY: fga-eps-mds_2026-1-AnatoQuizUp-Front
+          PROJECT_KEY: fga-eps-mds_2026-2-AnatoQuizUp-Front
         run: |
           SEMESTER="2026_1"
           PROJECT_NAME="AnatoQuizUp"
