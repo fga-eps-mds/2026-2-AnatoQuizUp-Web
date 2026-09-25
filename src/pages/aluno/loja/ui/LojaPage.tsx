@@ -1,7 +1,8 @@
-// Pagina da Loja Virtual do aluno. Lista o catalogo de cosmeticos (icones,
-// molduras, avatares, titulos e fundos) e o inventario ja adquirido, permitindo
-// filtrar por categoria, ordenar por preco, pre-visualizar e comprar itens com
-// as moedas ATP do aluno.
+// Pagina da Loja Virtual do aluno. Lista o catalogo (itens consumiveis — dicas e
+// potencializadores — e cosmeticos: icones, molduras, avatares, titulos e fundos)
+// e o inventario ja adquirido, permitindo filtrar por categoria, ordenar por
+// preco e comprar itens com as moedas ATP do aluno. Toda compra passa pelo modal
+// de confirmacao, e o resultado (sucesso ou saldo insuficiente) aparece em outro modal.
 import { useEffect, useMemo, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -17,9 +18,11 @@ import {
   Palette,
   ShoppingBag,
   Smile,
+  Lightbulb,
   Sparkles,
   UserRound,
   X,
+  Zap,
 } from 'lucide-react';
 
 import {
@@ -32,6 +35,11 @@ import type {
   ItemLoja,
   TipoItemLoja,
 } from '../../../../features/loja';
+import { ModalConfirmarCompra } from '../../../../features/loja/ui/ModalConfirmarCompra';
+import {
+  ModalResultadoCompra,
+  type ResultadoCompra,
+} from '../../../../features/loja/ui/ModalResultadoCompra';
 import { useStudentCoinsStore } from '../../../../features/student-coins/model/useStudentCoinsStore';
 import { CosmeticPreview } from '../../../../shared/ui/cosmetics';
 
@@ -43,6 +51,8 @@ type Ordenacao = 'asc' | 'desc';
 // Categorias exibidas no menu de filtros, cada uma com rotulo e icone proprios.
 const CATEGORIAS: { key: Aba; label: string; icon: LucideIcon }[] = [
   { key: 'TODOS', label: 'Todos', icon: LayoutGrid },
+  { key: 'DICA', label: 'Dicas', icon: Lightbulb },
+  { key: 'POTENCIALIZADOR', label: 'Potencializadores', icon: Zap },
   { key: 'ICONE_PERFIL', label: 'Ícones', icon: Smile },
   { key: 'MOLDURA', label: 'Molduras', icon: Frame },
   { key: 'AVATAR', label: 'Avatares', icon: UserRound },
@@ -51,8 +61,13 @@ const CATEGORIAS: { key: Aba; label: string; icon: LucideIcon }[] = [
   { key: 'INVENTARIO', label: 'Meu Inventário', icon: Backpack },
 ];
 
-// Mensagem de feedback exibida apos uma compra (sucesso ou erro).
-type Feedback = { tipo: 'sucesso' | 'erro'; texto: string };
+// Mensagem de erro exibida no banner quando a compra falha por outro motivo
+// que nao saldo (ex.: item indisponivel, falha de rede).
+type Feedback = { tipo: 'erro'; texto: string };
+
+// O backend responde 422 com esta mensagem quando falta saldo; nesse caso
+// mostramos o modal de "Saldo insuficiente" em vez do banner de erro.
+const ehErroDeSaldo = (mensagem: string) => /saldo/i.test(mensagem);
 
 /**
  * Etiqueta de preco padronizada (icone de moeda + valor em ATP).
@@ -67,7 +82,7 @@ const PrecoEtiqueta = ({ preco }: { preco: number }) => (
 
 /**
  * Componente raiz da Loja. Carrega catalogo e inventario, controla a aba/ordem
- * selecionadas e o fluxo de compra (incluindo o modal de pre-visualizacao).
+ * selecionadas e o fluxo de compra (modais de confirmacao e de resultado).
  */
 export const LojaPage = () => {
   // Saldo de moedas do aluno, lido da store global (compartilhada entre paginas).
@@ -79,12 +94,13 @@ export const LojaPage = () => {
   const [inventario, setInventario] = useState<InventarioItem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-  // Filtro de aba, ordenacao por preco e item aberto no modal de preview.
+  // Filtro de aba, ordenacao por preco e item aberto no modal de confirmacao.
   const [abaAtiva, setAbaAtiva] = useState<Aba>('TODOS');
   const [ordenacao, setOrdenacao] = useState<Ordenacao>('asc');
-  const [itemPreview, setItemPreview] = useState<ItemLoja | null>(null);
-  // Id em compra (trava o botao), feedback de compra e gatilho de recarga.
+  const [itemSelecionado, setItemSelecionado] = useState<ItemLoja | null>(null);
+  // Id em compra (trava os botoes), resultado da compra (modal), erro e recarga.
   const [comprandoId, setComprandoId] = useState<string | null>(null);
+  const [resultado, setResultado] = useState<ResultadoCompra | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [recarregar, setRecarregar] = useState(0);
 
@@ -157,35 +173,68 @@ export const LojaPage = () => {
   }, [itens, abaAtiva, ordenacao]);
 
   /**
-   * Compra um item: ao concluir, atualiza o saldo, marca o item como adquirido,
-   * adiciona-o ao inventario e mostra feedback. Em caso de falha, exibe o erro.
-   * @param item item do catalogo a ser comprado
+   * Clique em "Comprar" no card: sem saldo nem para uma unidade, explica o motivo
+   * no modal de saldo insuficiente; caso contrario abre a confirmacao. A compra
+   * so e enviada ao backend depois de confirmada.
+   * @param item item do catalogo escolhido
    */
-  const handleComprar = async (item: ItemLoja) => {
+  const handleSelecionarItem = (item: ItemLoja) => {
+    setFeedback(null);
+
+    if (!item.adquirido && saldoMoedas < item.precoMoedas) {
+      setResultado({ tipo: 'saldo-insuficiente', item, quantidade: 1, saldoMoedas });
+      return;
+    }
+
+    setItemSelecionado(item);
+  };
+
+  /**
+   * Compra confirmada: envia ao backend e, ao concluir, sincroniza o saldo, o
+   * catalogo (adquirido/quantidade) e o inventario, mostrando o modal de sucesso.
+   * Falta de saldo vira o modal de saldo insuficiente; outros erros, o banner.
+   * @param item item do catalogo a ser comprado
+   * @param quantidade unidades escolhidas no modal (1 para cosmeticos)
+   */
+  const handleConfirmarCompra = async (item: ItemLoja, quantidade: number) => {
     setComprandoId(item.id);
     setFeedback(null);
 
     try {
-      const resposta = await comprarItem(item.id);
+      const resposta = await comprarItem(item.id, quantidade);
+      const quantidadeTotal = resposta.item.quantidade ?? 1;
 
-      // Sincroniza o saldo retornado e reflete a aquisicao na UI sem novo fetch.
+      // Sincroniza o saldo retornado e reflete a compra na UI sem novo fetch.
       setSaldoMoedas(resposta.saldoMoedas);
       setItens((anteriores) =>
         anteriores.map((atual) =>
-          atual.id === item.id ? { ...atual, adquirido: true } : atual,
+          atual.id === item.id
+            ? {
+                ...atual,
+                adquirido: !atual.consumivel,
+                quantidadePossuida: quantidadeTotal,
+              }
+            : atual,
         ),
       );
-      setInventario((anteriores) => [resposta.item, ...anteriores]);
-      setItemPreview(null);
-      setFeedback({
-        tipo: 'sucesso',
-        texto: `"${item.nome}" comprado! Saldo: ${resposta.saldoMoedas} ATP.`,
-      });
+      // Consumivel ja possuido: substitui o registro (quantidade nova); senao, adiciona.
+      setInventario((anteriores) => [
+        resposta.item,
+        ...anteriores.filter((registro) => registro.item.id !== resposta.item.item.id),
+      ]);
+      setItemSelecionado(null);
+      setResultado({ tipo: 'sucesso', item, quantidade, saldoMoedas: resposta.saldoMoedas });
     } catch (error) {
-      setFeedback({
-        tipo: 'erro',
-        texto: error instanceof Error ? error.message : 'Não foi possível comprar o item.',
-      });
+      const mensagem =
+        error instanceof Error ? error.message : 'Não foi possível comprar o item.';
+
+      setItemSelecionado(null);
+
+      if (ehErroDeSaldo(mensagem)) {
+        setResultado({ tipo: 'saldo-insuficiente', item, quantidade, saldoMoedas });
+      } else {
+        setFeedback({ tipo: 'erro', texto: mensagem });
+      }
     } finally {
       setComprandoId(null);
     }
@@ -202,7 +251,7 @@ export const LojaPage = () => {
             <div>
               <h1 className="text-2xl font-black text-[#0A1128]">Loja Virtual</h1>
               <p className="text-sm font-medium text-[#0A1128]/55">
-                Use suas moedas ATP para personalizar o seu perfil.
+                Use suas moedas ATP para turbinar seus estudos e personalizar o seu perfil.
               </p>
             </div>
           </div>
@@ -220,17 +269,13 @@ export const LojaPage = () => {
           </div>
         </header>
 
-        {/* Banner de feedback da ultima compra (sucesso/erro), some sozinho. */}
+        {/* Banner de erro de compra (exceto saldo, que tem modal proprio); some sozinho. */}
         {feedback && (
           <div
             role="status"
-            className={`mt-5 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold ${
-              feedback.tipo === 'sucesso'
-                ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border border-rose-200 bg-rose-50 text-rose-700'
-            }`}
+            className="mt-5 flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"
           >
-            {feedback.tipo === 'sucesso' ? <Check size={18} /> : <X size={18} />}
+            <X size={18} />
             {feedback.texto}
           </div>
         )}
@@ -318,42 +363,44 @@ export const LojaPage = () => {
               itens={itensVisiveis}
               saldoMoedas={saldoMoedas}
               comprandoId={comprandoId}
-              onPreview={setItemPreview}
-              onComprar={handleComprar}
+              onSelecionar={handleSelecionarItem}
             />
           )}
         </section>
       </div>
 
-      {itemPreview && (
-        <ModalPreview
-          item={itemPreview}
+      {itemSelecionado && (
+        <ModalConfirmarCompra
+          item={itemSelecionado}
           saldoMoedas={saldoMoedas}
-          comprando={comprandoId === itemPreview.id}
-          onFechar={() => setItemPreview(null)}
-          onComprar={() => void handleComprar(itemPreview)}
+          comprando={comprandoId === itemSelecionado.id}
+          onCancelar={() => setItemSelecionado(null)}
+          onConfirmar={(quantidade) => void handleConfirmarCompra(itemSelecionado, quantidade)}
         />
+      )}
+
+      {resultado && (
+        <ModalResultadoCompra resultado={resultado} onFechar={() => setResultado(null)} />
       )}
     </div>
   );
 };
 
 /**
- * Grade de itens do catalogo. Cada card mostra preview, preco e o botao de
- * compra (desabilitado quando o aluno nao tem saldo ou ja esta comprando).
+ * Grade de itens do catalogo. Cada card mostra preview, preco, o efeito (nos
+ * consumiveis) e quantas unidades o aluno ja tem. "Comprar" nunca compra direto:
+ * abre a confirmacao (ou o aviso de saldo insuficiente, que explica o motivo).
  */
 const CatalogoGrid = ({
   itens,
   saldoMoedas,
   comprandoId,
-  onPreview,
-  onComprar,
+  onSelecionar,
 }: {
   itens: ItemLoja[];
   saldoMoedas: number;
   comprandoId: string | null;
-  onPreview: (item: ItemLoja) => void;
-  onComprar: (item: ItemLoja) => void;
+  onSelecionar: (item: ItemLoja) => void;
 }) => {
   if (itens.length === 0) {
     return (
@@ -366,17 +413,24 @@ const CatalogoGrid = ({
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {itens.map((item) => {
-        // Sem saldo suficiente, o botao de compra fica bloqueado.
+        // Sem saldo para uma unidade: o botao continua clicavel para explicar o motivo.
         const semSaldo = saldoMoedas < item.precoMoedas;
+        const quantidadePossuida = item.quantidadePossuida ?? 0;
 
         return (
           <article
             key={item.id}
-            className="flex flex-col items-center gap-3 rounded-2xl border border-[#0A1128]/10 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+            className="relative flex flex-col items-center gap-3 rounded-2xl border border-[#0A1128]/10 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
           >
+            {item.consumivel && quantidadePossuida > 0 && (
+              <span className="absolute right-3 top-3 rounded-full bg-[#0A1128] px-2 py-0.5 text-xs font-black tabular-nums text-white">
+                Você tem {quantidadePossuida}
+              </span>
+            )}
+
             <button
               type="button"
-              onClick={() => onPreview(item)}
+              onClick={() => onSelecionar(item)}
               className="flex h-32 cursor-pointer items-center justify-center"
               aria-label={`Pré-visualizar ${item.nome}`}
             >
@@ -385,6 +439,9 @@ const CatalogoGrid = ({
 
             <div className="flex w-full flex-1 flex-col items-center gap-2 text-center">
               <h3 className="line-clamp-2 text-sm font-black text-[#0A1128]">{item.nome}</h3>
+              {item.consumivel && item.efeito && (
+                <p className="line-clamp-2 text-xs font-medium text-[#0A1128]/55">{item.efeito}</p>
+              )}
               <PrecoEtiqueta preco={item.precoMoedas} />
             </div>
 
@@ -396,9 +453,13 @@ const CatalogoGrid = ({
             ) : (
               <button
                 type="button"
-                onClick={() => onComprar(item)}
-                disabled={semSaldo || comprandoId === item.id}
-                className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[#F97316] px-3 py-2 text-sm font-bold text-white transition-colors hover:bg-[#ea670c] disabled:cursor-not-allowed disabled:bg-[#0A1128]/15 disabled:text-[#0A1128]/40"
+                onClick={() => onSelecionar(item)}
+                disabled={comprandoId === item.id}
+                className={`flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-bold transition-colors disabled:cursor-not-allowed ${
+                  semSaldo
+                    ? 'bg-[#0A1128]/10 text-[#0A1128]/45 hover:bg-[#0A1128]/15'
+                    : 'bg-[#F97316] text-white hover:bg-[#ea670c]'
+                }`}
               >
                 {comprandoId === item.id ? (
                   'Comprando...'
@@ -420,7 +481,8 @@ const CatalogoGrid = ({
 };
 
 /**
- * Grade do inventario do aluno (itens ja adquiridos). Mostra um estado vazio
+ * Grade do inventario do aluno (itens ja adquiridos). Consumiveis mostram a
+ * quantidade possuida; cosmeticos, o selo "Adquirido". Mostra um estado vazio
  * convidando a comprar quando ainda nao ha nenhum item.
  * @param inventario itens que o aluno ja possui
  */
@@ -449,108 +511,18 @@ const InventarioGrid = ({ inventario }: { inventario: InventarioItem[] }) => {
           <h3 className="line-clamp-2 text-center text-sm font-black text-[#0A1128]">
             {registro.item.nome}
           </h3>
-          <span className="flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-600">
-            <Check size={16} />
-            Adquirido
-          </span>
-        </article>
-      ))}
-    </div>
-  );
-};
-
-/**
- * Modal de pre-visualizacao de um item, com descricao, preco e confirmacao de
- * compra. Fecha ao clicar fora da caixa ou no botao de fechar.
- */
-const ModalPreview = ({
-  item,
-  saldoMoedas,
-  comprando,
-  onFechar,
-  onComprar,
-}: {
-  item: ItemLoja;
-  saldoMoedas: number;
-  comprando: boolean;
-  onFechar: () => void;
-  onComprar: () => void;
-}) => {
-  const semSaldo = saldoMoedas < item.precoMoedas;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      // Clique no fundo escurecido (fora da caixa) fecha o modal.
-      onMouseDown={(evento) => {
-        if (evento.target === evento.currentTarget) {
-          onFechar();
-        }
-      }}
-      role="presentation"
-    >
-      <div
-        className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Pré-visualização de ${item.nome}`}
-      >
-        <button
-          type="button"
-          onClick={onFechar}
-          className="absolute right-4 top-4 cursor-pointer text-[#0A1128]/40 transition-colors hover:text-[#0A1128]"
-          aria-label="Fechar pré-visualização"
-        >
-          <X size={22} />
-        </button>
-
-        <div className="flex flex-col items-center gap-4 text-center">
-          <span className="text-[11px] font-black uppercase tracking-widest text-[#0A1128]/40">
-            Pré-visualização
-          </span>
-
-          <CosmeticPreview item={item} grande />
-
-          <h2 className="text-xl font-black text-[#0A1128]">{item.nome}</h2>
-
-          {item.descricao && (
-            <p className="text-sm font-medium text-[#0A1128]/60">{item.descricao}</p>
-          )}
-
-          <PrecoEtiqueta preco={item.precoMoedas} />
-
-          {item.adquirido ? (
-            <span className="flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-600">
-              <Check size={18} />
-              Você já possui este item
+          {registro.item.consumivel ? (
+            <span className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#0A1128]/5 px-3 py-2 text-sm font-bold tabular-nums text-[#0A1128]">
+              {registro.quantidade ?? 1} {(registro.quantidade ?? 1) === 1 ? 'unidade' : 'unidades'}
             </span>
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={onComprar}
-                disabled={semSaldo || comprando}
-                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-[#F97316] px-4 py-3 text-sm font-black text-white transition-colors hover:bg-[#ea670c] disabled:cursor-not-allowed disabled:bg-[#0A1128]/15 disabled:text-[#0A1128]/40"
-              >
-                {comprando ? (
-                  'Comprando...'
-                ) : (
-                  <>
-                    <ShoppingBag size={18} />
-                    Confirmar compra
-                  </>
-                )}
-              </button>
-              {semSaldo && (
-                <p className="flex items-center gap-1.5 text-xs font-bold text-rose-500">
-                  <Lock size={14} />
-                  Moedas insuficientes para esta compra.
-                </p>
-              )}
-            </>
+            <span className="flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-600">
+              <Check size={16} />
+              Adquirido
+            </span>
           )}
-        </div>
-      </div>
+        </article>
+      ))}
     </div>
   );
 };

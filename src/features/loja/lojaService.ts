@@ -59,11 +59,16 @@ export const buscarInventarioCompleto = async (): Promise<InventarioItem[]> => {
   }
 };
 
-// POST /loja/comprar — compra um item; a resposta traz o item e o novo saldo.
-export const comprarItem = async (itemLojaId: string): Promise<CompraItemResponse> => {
+// POST /loja/comprar — compra um item (quantidade > 1 so para consumiveis);
+// a resposta traz o item com a quantidade total e o novo saldo.
+export const comprarItem = async (
+  itemLojaId: string,
+  quantidade = 1,
+): Promise<CompraItemResponse> => {
   try {
     const { data } = await httpClient.post<CompraItemResponse>(`${LOJA_ENDPOINT}/comprar`, {
       itemLojaId,
+      quantidade,
     });
 
     return data;
