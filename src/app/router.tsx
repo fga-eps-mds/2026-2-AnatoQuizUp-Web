@@ -48,10 +48,14 @@ import { NotFoundPage } from '../pages/not-found';
  * via ProtectedRoute. Qualquer caminho desconhecido cai na pagina 404.
  */
 export const AppRouter = () => {
+  const isLocalDevelopment =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
   return (
     <Routes>
       {/* Prévia disponível apenas no servidor local de desenvolvimento. */}
-      {import.meta.env.DEV && <Route element={<PreviewLayout />}>
+      {isLocalDevelopment && <Route element={<PreviewLayout />}>
         <Route path="/perfil-preview" element={<ProfilePreviewPage />} />
         <Route path="/avatar-preview" element={<AvatarPreviewPage />} />
       </Route>}
