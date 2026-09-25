@@ -1,0 +1,5 @@
+# SonarCloud project identifiers are public metadata, not credentials.
+# These exceptions are limited to the historical findings reported by Gitleaks.
+57da64729c6d9d271da9a49591b13cb96ad17926:sonar-project.properties:generic-api-key:1
+3abb91442b92f8eb1180a845e568a9587c18e7a8:.github/workflows/ci.yml:generic-api-key:73
+3abb91442b92f8eb1180a845e568a9587c18e7a8:.github/workflows/release.yml:generic-api-key:68
