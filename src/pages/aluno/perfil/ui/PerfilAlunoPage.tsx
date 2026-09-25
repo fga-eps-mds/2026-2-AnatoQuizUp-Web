@@ -1,29 +1,41 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, ChevronRight, Target, Users } from 'lucide-react';
-
+import { Link, useNavigate } from 'react-router-dom';
+import { BookOpen, ChevronRight, Coins, Pencil, Users } from 'lucide-react';
 import { useAuth } from '../../../../app/providers/AuthProvider';
-import {
-  AchievementHighlights,
-  listarConquistasDestacadas,
-  type ConquistaDestacada,
-} from '../../../../features/achievements';
+import type { User } from '../../../../entities/user/model/types';
+import { obterRankingGeral } from '../../../../features/ranking';
+import { AchievementHighlights, listarConquistasDestacadas, type ConquistaDestacada } from '../../../../features/achievements';
 import { listarAmigos } from '../../../../features/friendship';
-import { useEquippedCosmeticsStore } from '../../../../features/profile-cosmetics';
-import { converterEquipadosParaSlots } from '../../../../features/profile-cosmetics';
 import { buscarInventarioCompleto } from '../../../../features/loja';
+import { converterEquipadosParaSlots, useEquippedCosmeticsStore } from '../../../../features/profile-cosmetics';
 import { useStudentCoinsStore } from '../../../../features/student-coins/model/useStudentCoinsStore';
+import { AvatarCosmetico } from '../../../../shared/ui/profile-identity-card';
 import { httpClient } from '../../../../shared/api/httpClient';
-import { ProfileIdentityCard } from '../../../../shared/ui/profile-identity-card';
+import { montarIniciais } from '../../../../shared/utils/iniciais';
 import type { DashboardAlunoResponse } from '../../../dashboardAluno/types';
+import './profile.css';
 
-// Estatisticas resumidas exibidas nos cartoes do topo do perfil.
-type StatsPerfil = {
-  respondidas: number;
-  taxa: number;
-  amigos: number;
-};
+type Performance = { totalAcertos: number | null; taxaAcerto: number | null; posicao: number | null };
+const initialPerformance: Performance = { totalAcertos: null, taxaAcerto: null, posicao: null };
+
+function formatDate(value?: string | null) {
+  if (!value) return 'Não informado';
+  const date = new Date(value.length === 10 ? `${value}T12:00:00` : value);
+  return Number.isNaN(date.getTime()) ? 'Não informado' : new Intl.DateTimeFormat('pt-BR').format(date);
+}
+
+function Detail({ label, value }: { label: string; value?: string | number | null }) {
+  return <div className="profile-detail"><dt>{label}</dt><dd>{value === null || value === undefined || value === '' ? 'Não informado' : value}</dd></div>;
+}
+
+function PerformanceStrip({ data, onNavigate }: { data: Performance; onNavigate: (path: string) => void }) {
+  return <div className="profile-performance" aria-label="Desempenho geral">
+    <button type="button" onClick={() => onNavigate('/aluno/dashboard')}><strong>{data.totalAcertos?.toLocaleString('pt-BR') ?? '—'}</strong><span>Acertos</span></button>
+    <button type="button" onClick={() => onNavigate('/aluno/ranking')}><strong>{data.posicao ?? '—'}</strong><span>Ranking</span></button>
+    <button type="button" onClick={() => onNavigate('/aluno/dashboard')}><strong>{data.taxaAcerto === null ? '—' : `${Math.round(data.taxaAcerto)}%`}</strong><span>Taxa de acerto</span></button>
+  </div>;
+}
 
 // Props do cartao de estatistica reutilizavel (icone, valor, rotulo, tom de cor).
 type CardStatProps = {
@@ -98,180 +110,100 @@ export const CardStat = ({ icon, valor, rotulo, carregando, tone, onClick }: Car
   return <div className={CARD_STAT_BASE_CLASS}>{conteudo}</div>;
 };
 
-/**
- * Pagina "Meu Perfil" do aluno: cartao de identidade com cosmeticos, cartoes de
- * estatisticas (respondidas/taxa/amigos), conquistas em destaque e itens em uso.
- * Carrega tudo em paralelo e sincroniza os cosmeticos equipados na store ao montar.
- */
-export const PerfilAlunoPage = () => {
+
+type StatsPerfil = { respondidas: number; amigos: number };
+
+/** Perfil do aluno com dados disponíveis na conta e no dashboard. */
+export const PerfilAlunoPage = ({ previewUser }: { previewUser?: User } = {}) => {
+  const { user: authenticatedUser } = useAuth();
+  const user = previewUser ?? authenticatedUser;
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const [performance, setPerformance] = useState<Performance>(initialPerformance);
+  const [stats, setStats] = useState<StatsPerfil>({ respondidas: 0, amigos: 0 });
+  const [carregandoStats, setCarregandoStats] = useState(!previewUser);
+  const [conquistasDestacadas, setConquistasDestacadas] = useState<ConquistaDestacada[]>([]);
+  const cosmeticos = useEquippedCosmeticsStore((state) => state.cosmeticos);
+  const setCosmeticos = useEquippedCosmeticsStore((state) => state.setCosmeticos);
   const saldoMoedas = useStudentCoinsStore((state) => state.saldoMoedas);
 
-  const cosmeticos = useEquippedCosmeticsStore((state) => state.cosmeticos);
-  // MODIFICAÇÃO: Pegando o setCosmeticos para atualizar a store no load
-  const setCosmeticos = useEquippedCosmeticsStore((state) => state.setCosmeticos);
-
-  const [stats, setStats] = useState<StatsPerfil>({
-    respondidas: 0,
-    taxa: 0,
-    amigos: 0,
-  });
-  const [carregandoStats, setCarregandoStats] = useState(true);
-  const [conquistasDestacadas, setConquistasDestacadas] = useState<ConquistaDestacada[]>([]);
-
   useEffect(() => {
-    let ativo = true;
-
-    const carregarStats = async () => {
-      // Busca dashboard, amigos, inventario e destaques em paralelo, tolerando falhas individuais.
-      const [dashboard, amigos, inventario, destaques] = await Promise.allSettled([
-        httpClient.get<Pick<DashboardAlunoResponse, 'totalRespondidas' | 'taxaAcerto'>>(
-          '/dashboardAluno',
-        ),
-        listarAmigos({ limit: 1 }),
-        buscarInventarioCompleto(),
-        listarConquistasDestacadas(),
-      ]);
-
-      if (!ativo) {
-        return;
-      }
-
-      setStats({
-        respondidas: dashboard.status === 'fulfilled' ? dashboard.value.data.totalRespondidas : 0,
-        taxa: dashboard.status === 'fulfilled' ? dashboard.value.data.taxaAcerto : 0,
-        amigos: amigos.status === 'fulfilled' ? amigos.value.metadados.total : 0,
+    if (!user || previewUser) return;
+    let active = true;
+    void Promise.allSettled([
+      httpClient.get<Pick<DashboardAlunoResponse, 'totalRespondidas' | 'totalAcertos' | 'taxaAcerto'>>('/dashboardAluno'),
+      obterRankingGeral(),
+      listarAmigos({ limit: 1 }),
+      buscarInventarioCompleto(),
+      listarConquistasDestacadas(),
+    ]).then(([dashboard, ranking, friends, inventory, highlights]) => {
+      if (!active) return;
+      setPerformance({
+        totalAcertos: dashboard.status === 'fulfilled' ? dashboard.value.data.totalAcertos ?? null : null,
+        taxaAcerto: dashboard.status === 'fulfilled' ? dashboard.value.data.taxaAcerto ?? null : null,
+        posicao: ranking.status === 'fulfilled' ? ranking.value.usuarioAtual?.posicao ?? null : null,
       });
-
-      // MODIFICAÇÃO: Sincroniza a store com o banco ao carregar a página (F5)
-      if (inventario.status === 'fulfilled') {
-        setCosmeticos(converterEquipadosParaSlots(inventario.value));
-      }
-
-      setConquistasDestacadas(
-        destaques.status === 'fulfilled' && Array.isArray(destaques.value)
-          ? destaques.value
-          : [],
-      );
+      setStats({
+        respondidas: dashboard.status === 'fulfilled' ? dashboard.value.data.totalRespondidas ?? 0 : 0,
+        amigos: friends.status === 'fulfilled' ? friends.value?.metadados?.total ?? 0 : 0,
+      });
+      if (inventory.status === 'fulfilled' && Array.isArray(inventory.value)) setCosmeticos(converterEquipadosParaSlots(inventory.value));
+      setConquistasDestacadas(highlights.status === 'fulfilled' && Array.isArray(highlights.value) ? highlights.value : []);
       setCarregandoStats(false);
-    };
+    });
+    return () => { active = false; };
+  }, [user, previewUser, setCosmeticos]);
 
-    void carregarStats();
+  if (!user) return null;
 
-    return () => {
-      ativo = false;
-    };
-  }, [setCosmeticos]); // MODIFICAÇÃO: setCosmeticos adicionado à dependência
-
-  if (!user) {
-    return null;
-  }
-
-  // Dados derivados para o cabecalho do cartao de identidade.
-  const nickname = user.nickname?.trim();
-  const cursoLabel =
-    [user.course, user.institution].filter(Boolean).join(' · ') || 'Curso não informado';
-  const saldoFormatado = saldoMoedas.toLocaleString('pt-BR');
-
-  // Foto efetiva (avatar ou icone) e flag indicando se ha algum cosmetico equipado.
-  const fotoPerfil = cosmeticos.AVATAR ?? cosmeticos.ICONE_PERFIL;
-  const temItensEmUso = Boolean(
-    fotoPerfil ?? cosmeticos.MOLDURA ?? cosmeticos.TITULO ?? cosmeticos.PLANO_FUNDO,
-  );
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <header>
-          <h1 className="text-3xl font-black text-[#00214d]">Meu Perfil</h1>
-          <p className="mt-1 text-sm font-semibold text-gray-500">Sua conta no AnatoQuizUp</p>
-        </header>
-
-        <ProfileIdentityCard
-          identidade={{
-            nome: user.name,
-            nickname,
-            curso: cursoLabel,
-          }}
-          cosmeticos={cosmeticos}
-          tamanho="md"
-          readOnly={false}
-          onPersonalizar={() => navigate('/aluno/perfil/personalizar')}
-          email={user.email}
-          saldo={`${saldoFormatado} ATP`}
-          onEditar={() => navigate('/aluno/perfil/editar')}
-        />
-
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <CardStat
-            icon={<BookOpen size={20} />}
-            valor={stats.respondidas}
-            rotulo="Questões respondidas"
-            carregando={carregandoStats}
-            tone="teal"
-            onClick={() => navigate('/aluno/dashboard')}
-          />
-          <CardStat
-            icon={<Target size={20} />}
-            valor={`${stats.taxa}%`}
-            rotulo="Taxa de acerto"
-            carregando={carregandoStats}
-            tone="green"
-            onClick={() => navigate('/aluno/dashboard')}
-          />
-          <CardStat
-            icon={<Users size={20} />}
-            valor={stats.amigos}
-            rotulo="Amigos"
-            carregando={carregandoStats}
-            tone="blue"
-            onClick={() => navigate('/aluno/amigos', { state: { aba: 'amigos' } })}
-          />
+  const firstName = user.name.trim().split(/\s+/)[0] || 'aluno';
+  const avatarHref = previewUser ? '/avatar-preview' : '/aluno/perfil/avatar';
+  const profilePicture = cosmeticos.AVATAR ?? cosmeticos.ICONE_PERFIL;
+  const hasEquippedItems = Boolean(profilePicture ?? cosmeticos.MOLDURA ?? cosmeticos.TITULO ?? cosmeticos.PLANO_FUNDO);
+  return <div className="profile-screen">
+    <header className="profile-screen-header"><h1>Meu perfil</h1><p>Gerencie suas informações e personalize sua experiência</p></header>
+    <nav className="profile-breadcrumb" aria-label="Localização"><span aria-current="page">Perfil</span><span aria-hidden="true">/</span><Link to={avatarHref}>Meu avatar</Link></nav>
+    <div className="profile-intro"><h2>Olá, {firstName}</h2><p>Escolha os detalhes que combinam com você</p></div>
+    <div className="profile-layout">
+      <div className="profile-left">
+        <section className="profile-identity-card" aria-label="Identidade do aluno">
+          {cosmeticos.PLANO_FUNDO?.valor && <div className="profile-identity-accent" style={{ background: cosmeticos.PLANO_FUNDO.valor }} />}
+          <button className="profile-edit-button" type="button" aria-label="Editar informações" onClick={() => navigate('/aluno/perfil/editar')}><Pencil size={20} /></button>
+          {profilePicture || cosmeticos.MOLDURA
+            ? <div className="profile-avatar-wrap"><AvatarCosmetico identidade={{ nome: user.name }} cosmeticos={cosmeticos} tamanho="lg" /><span className="profile-presence" /></div>
+            : <div className="profile-initials">{montarIniciais(user.name)}<span className="profile-presence" /></div>}
+          <h3>Aluno</h3>
+          {cosmeticos.TITULO && <span className="profile-equipped-title">{cosmeticos.TITULO.nome}</span>}
+          <p className="profile-atp"><Coins size={17} aria-hidden="true" />{saldoMoedas.toLocaleString('pt-BR')} ATP</p>
+          <button className="profile-customize-link" type="button" onClick={() => navigate('/aluno/perfil/personalizar')}>Personalizar perfil</button>
+          <PerformanceStrip data={performance} onNavigate={navigate} />
         </section>
-
-        <AchievementHighlights
-          conquistas={conquistasDestacadas}
-          onManage={() => navigate('/aluno/conquistas', { state: { gerenciarDestaques: true } })}
-        />
-
-        {/* Vitrine dos cosmeticos equipados; so aparece quando ha algum item em uso. */}
-        {temItensEmUso && (
-          <section aria-label="Itens em uso">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-black text-[#00214d]">Itens em uso</h2>
-              <button
-                type="button"
-                onClick={() => navigate('/aluno/loja')}
-                className="text-sm font-bold text-[#14b8a6] hover:underline"
-              >
-                Personalizar →
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[
-                { rotulo: 'FOTO DE PERFIL', item: fotoPerfil },
-                { rotulo: 'MOLDURA', item: cosmeticos.MOLDURA },
-                { rotulo: 'TÍTULO', item: cosmeticos.TITULO },
-                { rotulo: 'FUNDO', item: cosmeticos.PLANO_FUNDO },
-              ].map(({ rotulo, item }) => (
-                <div
-                  key={rotulo}
-                  className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
-                >
-                  <p className="text-[10px] font-black uppercase tracking-wide text-gray-400">
-                    {rotulo}
-                  </p>
-                  <p className="mt-1 truncate text-sm font-bold text-[#00214d]">
-                    {item ? item.nome : '—'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        <section className="profile-data-card profile-status-card"><h3>Status da conta</h3><div><span>Acesso</span><strong className={user.status === 'ACTIVE' ? 'profile-active' : 'profile-inactive'}>{user.status === 'ACTIVE' ? 'ATIVO' : 'INATIVO'}</strong></div></section>
+        <Link className="profile-avatar-link" to={avatarHref}>Meu avatar <span aria-hidden="true">→</span></Link>
+      </div>
+      <div className="profile-right">
+        <section className="profile-data-card"><h3>Dados pessoais</h3><dl className="profile-details-grid"><Detail label="E-mail" value={user.email} /><Detail label="Nome completo" value={user.name} /><Detail label="Data de nascimento" value={formatDate(user.birthDate)} /></dl></section>
+        <section className="profile-data-card"><h3>Dados acadêmicos</h3><dl className="profile-details-grid"><Detail label="Instituição de ensino" value={user.institution} /><Detail label="Curso" value={user.course} /><Detail label="Semestre" value={user.period ? `${user.period}º semestre` : null} /></dl></section>
+        <section className="profile-data-card"><h3>Cadastro no sistema</h3><dl className="profile-details-grid"><Detail label="Data do cadastro" value={formatDate(user.createdAt)} /><Detail label="Usuário" value={user.nickname || user.id} /></dl></section>
       </div>
     </div>
-  );
+    <section className="profile-existing-features" aria-label="Atividades e conquistas">
+      <h2>Atividades e conquistas</h2>
+      <div className="profile-activity-cards">
+        <CardStat icon={<BookOpen size={20} />} valor={stats.respondidas} rotulo="Questões respondidas" carregando={carregandoStats} tone="teal" onClick={() => navigate('/aluno/dashboard')} />
+        <CardStat icon={<Users size={20} />} valor={stats.amigos} rotulo="Amigos" carregando={carregandoStats} tone="blue" onClick={() => navigate('/aluno/amigos', { state: { aba: 'amigos' } })} />
+      </div>
+      <AchievementHighlights conquistas={conquistasDestacadas} onManage={() => navigate('/aluno/conquistas', { state: { gerenciarDestaques: true } })} />
+      {hasEquippedItems && <section aria-label="Itens em uso">
+        <div className="profile-equipped-heading"><h3>Itens em uso</h3><button type="button" onClick={() => navigate('/aluno/loja')}>Personalizar →</button></div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: 'FOTO DE PERFIL', item: profilePicture },
+            { label: 'MOLDURA', item: cosmeticos.MOLDURA },
+            { label: 'TÍTULO', item: cosmeticos.TITULO },
+            { label: 'FUNDO', item: cosmeticos.PLANO_FUNDO },
+          ].map(({ label, item }) => <div className="profile-equipped-item" key={label}><span>{label}</span><strong>{item?.nome ?? '—'}</strong></div>)}
+        </div>
+      </section>}
+    </section>
+  </div>;
 };

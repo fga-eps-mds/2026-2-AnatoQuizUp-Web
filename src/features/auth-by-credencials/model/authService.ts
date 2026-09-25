@@ -37,6 +37,8 @@ interface BackendUsuarioAutenticado {
   instituicao?: string | null;
   curso?: string | null;
   periodo?: string | null;
+  dataNascimento?: string | null;
+  createdAt?: string | null;
   visivel?: boolean;
 }
 
@@ -83,6 +85,8 @@ const mapUsuarioAutenticado = (usuario: BackendUsuarioAutenticado): User => ({
   institution: usuario.instituicao ?? null,
   course: usuario.curso ?? null,
   period: mapPeriodo(usuario.periodo),
+  birthDate: usuario.dataNascimento ?? null,
+  createdAt: usuario.createdAt ?? null,
   visivel: usuario.visivel ?? true,
 });
 

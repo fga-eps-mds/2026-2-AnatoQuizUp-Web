@@ -21,6 +21,8 @@ export interface User {
   institution?: string | null;
   course?: string | null;
   period?: number | null;
+  birthDate?: string | null;
+  createdAt?: string | null;
   visivel?: boolean;
 }
 
