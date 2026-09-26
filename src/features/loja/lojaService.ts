@@ -1,8 +1,8 @@
 // Servico da loja de cosmeticos. Expoe as chamadas para listar o catalogo,
 // consultar o inventario (paginado e completo) e comprar itens. Erros sao
 // uniformizados via extractErrorMessage para exibir mensagens amigaveis.
-import { httpClient } from '../../shared/api/httpClient';
-import { extractErrorMessage } from '../manage-questions/model/questionService';
+import { httpClient } from "../../shared/api/httpClient";
+import { extractErrorMessage } from "../manage-questions/model/questionService";
 import type {
   CompraItemResponse,
   InventarioItem,
@@ -10,20 +10,23 @@ import type {
   ListarCatalogoParams,
   RespostaInventarioCompleto,
   RespostaPaginada,
-} from './types';
-import { normalizarInventarioPlano } from './types';
+} from "./types";
+import { normalizarInventarioPlano } from "./types";
 
 // Prefixo base das rotas da loja.
-const LOJA_ENDPOINT = '/loja';
+const LOJA_ENDPOINT = "/loja";
 
 // GET /loja/catalogo — lista os itens a venda (paginado/filtrado).
 export const listarCatalogo = async (
   params?: ListarCatalogoParams,
 ): Promise<RespostaPaginada<ItemLoja>> => {
   try {
-    const { data } = await httpClient.get<RespostaPaginada<ItemLoja>>(`${LOJA_ENDPOINT}/catalogo`, {
-      params,
-    });
+    const { data } = await httpClient.get<RespostaPaginada<ItemLoja>>(
+      `${LOJA_ENDPOINT}/catalogo`,
+      {
+        params,
+      },
+    );
 
     return data;
   } catch (error) {
@@ -51,7 +54,9 @@ export const listarInventario = async (params?: {
 // GET /inventario/meuInventario — inventario completo, achatado para lista plana.
 export const buscarInventarioCompleto = async (): Promise<InventarioItem[]> => {
   try {
-    const { data } = await httpClient.get<RespostaInventarioCompleto>('/inventario/meuInventario');
+    const { data } = await httpClient.get<RespostaInventarioCompleto>(
+      "/inventario/meuInventario",
+    );
 
     return normalizarInventarioPlano(data.dados);
   } catch (error) {
@@ -66,11 +71,31 @@ export const comprarItem = async (
   quantidade = 1,
 ): Promise<CompraItemResponse> => {
   try {
-    const { data } = await httpClient.post<CompraItemResponse>(`${LOJA_ENDPOINT}/comprar`, {
-      itemLojaId,
-      quantidade,
-    });
+    const { data } = await httpClient.post<CompraItemResponse>(
+      `${LOJA_ENDPOINT}/comprar`,
+      {
+        itemLojaId,
+        quantidade,
+      },
+    );
 
+    return data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+// POST /loja/usar — ativa uma unidade de potencializador do inventario.
+export const usarItem = async (
+  itemLojaId: string,
+): Promise<{
+  mensagem: string;
+  quantidadeRestante: number;
+}> => {
+  try {
+    const { data } = await httpClient.post(`${LOJA_ENDPOINT}/usar`, {
+      itemLojaId,
+    });
     return data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));

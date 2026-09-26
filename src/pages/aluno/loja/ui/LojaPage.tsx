@@ -3,8 +3,8 @@
 // e o inventario ja adquirido, permitindo filtrar por categoria, ordenar por
 // preco e comprar itens com as moedas ATP do aluno. Toda compra passa pelo modal
 // de confirmacao, e o resultado (sucesso ou saldo insuficiente) aparece em outro modal.
-import { useEffect, useMemo, useState } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
@@ -23,47 +23,48 @@ import {
   UserRound,
   X,
   Zap,
-} from 'lucide-react';
+} from "lucide-react";
 
 import {
   comprarItem,
   listarCatalogo,
   listarInventario,
-} from '../../../../features/loja';
+  usarItem,
+} from "../../../../features/loja";
 import type {
   InventarioItem,
   ItemLoja,
   TipoItemLoja,
-} from '../../../../features/loja';
-import { ModalConfirmarCompra } from '../../../../features/loja/ui/ModalConfirmarCompra';
+} from "../../../../features/loja";
+import { ModalConfirmarCompra } from "../../../../features/loja/ui/ModalConfirmarCompra";
 import {
   ModalResultadoCompra,
   type ResultadoCompra,
-} from '../../../../features/loja/ui/ModalResultadoCompra';
-import { useStudentCoinsStore } from '../../../../features/student-coins/model/useStudentCoinsStore';
-import { CosmeticPreview } from '../../../../shared/ui/cosmetics';
+} from "../../../../features/loja/ui/ModalResultadoCompra";
+import { useStudentCoinsStore } from "../../../../features/student-coins/model/useStudentCoinsStore";
+import { CosmeticPreview } from "../../../../shared/ui/cosmetics";
 
 // Aba ativa: "Todos", uma categoria especifica de item, ou o inventario do aluno.
-type Aba = 'TODOS' | TipoItemLoja | 'INVENTARIO';
+type Aba = "TODOS" | TipoItemLoja | "INVENTARIO";
 // Sentido de ordenacao por preco (crescente ou decrescente).
-type Ordenacao = 'asc' | 'desc';
+type Ordenacao = "asc" | "desc";
 
 // Categorias exibidas no menu de filtros, cada uma com rotulo e icone proprios.
 const CATEGORIAS: { key: Aba; label: string; icon: LucideIcon }[] = [
-  { key: 'TODOS', label: 'Todos', icon: LayoutGrid },
-  { key: 'DICA', label: 'Dicas', icon: Lightbulb },
-  { key: 'POTENCIALIZADOR', label: 'Potencializadores', icon: Zap },
-  { key: 'ICONE_PERFIL', label: 'Ícones', icon: Smile },
-  { key: 'MOLDURA', label: 'Molduras', icon: Frame },
-  { key: 'AVATAR', label: 'Avatares', icon: UserRound },
-  { key: 'TITULO', label: 'Títulos', icon: BadgeCheck },
-  { key: 'PLANO_FUNDO', label: 'Fundos', icon: Palette },
-  { key: 'INVENTARIO', label: 'Meu Inventário', icon: Backpack },
+  { key: "TODOS", label: "Todos", icon: LayoutGrid },
+  { key: "DICA", label: "Dicas", icon: Lightbulb },
+  { key: "POTENCIALIZADOR", label: "Potencializadores", icon: Zap },
+  { key: "ICONE_PERFIL", label: "Ícones", icon: Smile },
+  { key: "MOLDURA", label: "Molduras", icon: Frame },
+  { key: "AVATAR", label: "Avatares", icon: UserRound },
+  { key: "TITULO", label: "Títulos", icon: BadgeCheck },
+  { key: "PLANO_FUNDO", label: "Fundos", icon: Palette },
+  { key: "INVENTARIO", label: "Meu Inventário", icon: Backpack },
 ];
 
 // Mensagem de erro exibida no banner quando a compra falha por outro motivo
 // que nao saldo (ex.: item indisponivel, falha de rede).
-type Feedback = { tipo: 'erro'; texto: string };
+type Feedback = { tipo: "erro" | "sucesso"; texto: string };
 
 // O backend responde 422 com esta mensagem quando falta saldo; nesse caso
 // mostramos o modal de "Saldo insuficiente" em vez do banner de erro.
@@ -87,7 +88,9 @@ const PrecoEtiqueta = ({ preco }: { preco: number }) => (
 export const LojaPage = () => {
   // Saldo de moedas do aluno, lido da store global (compartilhada entre paginas).
   const saldoMoedas = useStudentCoinsStore((estado) => estado.saldoMoedas);
-  const setSaldoMoedas = useStudentCoinsStore((estado) => estado.setSaldoMoedas);
+  const setSaldoMoedas = useStudentCoinsStore(
+    (estado) => estado.setSaldoMoedas,
+  );
 
   // Catalogo e inventario carregados, com seus estados de carga/erro.
   const [itens, setItens] = useState<ItemLoja[]>([]);
@@ -95,9 +98,10 @@ export const LojaPage = () => {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   // Filtro de aba, ordenacao por preco e item aberto no modal de confirmacao.
-  const [abaAtiva, setAbaAtiva] = useState<Aba>('TODOS');
-  const [ordenacao, setOrdenacao] = useState<Ordenacao>('asc');
+  const [abaAtiva, setAbaAtiva] = useState<Aba>("TODOS");
+  const [ordenacao, setOrdenacao] = useState<Ordenacao>("asc");
   const [itemSelecionado, setItemSelecionado] = useState<ItemLoja | null>(null);
+  const [itemParaUsar, setItemParaUsar] = useState<InventarioItem | null>(null);
   // Id em compra (trava os botoes), resultado da compra (modal), erro e recarga.
   const [comprandoId, setComprandoId] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoCompra | null>(null);
@@ -124,7 +128,9 @@ export const LojaPage = () => {
         }
       } catch (error) {
         if (ativo) {
-          setErro(error instanceof Error ? error.message : 'Erro ao carregar a loja.');
+          setErro(
+            error instanceof Error ? error.message : "Erro ao carregar a loja.",
+          );
         }
       } finally {
         if (ativo) {
@@ -165,10 +171,15 @@ export const LojaPage = () => {
 
   // Itens da aba atual ja filtrados por categoria e ordenados pelo preco escolhido.
   const itensVisiveis = useMemo(() => {
-    const base = abaAtiva === 'TODOS' ? itens : itens.filter((item) => item.tipo === abaAtiva);
+    const base =
+      abaAtiva === "TODOS"
+        ? itens
+        : itens.filter((item) => item.tipo === abaAtiva);
 
     return [...base].sort((a, b) =>
-      ordenacao === 'asc' ? a.precoMoedas - b.precoMoedas : b.precoMoedas - a.precoMoedas,
+      ordenacao === "asc"
+        ? a.precoMoedas - b.precoMoedas
+        : b.precoMoedas - a.precoMoedas,
     );
   }, [itens, abaAtiva, ordenacao]);
 
@@ -182,7 +193,12 @@ export const LojaPage = () => {
     setFeedback(null);
 
     if (!item.adquirido && saldoMoedas < item.precoMoedas) {
-      setResultado({ tipo: 'saldo-insuficiente', item, quantidade: 1, saldoMoedas });
+      setResultado({
+        tipo: "saldo-insuficiente",
+        item,
+        quantidade: 1,
+        saldoMoedas,
+      });
       return;
     }
 
@@ -220,23 +236,73 @@ export const LojaPage = () => {
       // Consumivel ja possuido: substitui o registro (quantidade nova); senao, adiciona.
       setInventario((anteriores) => [
         resposta.item,
-        ...anteriores.filter((registro) => registro.item.id !== resposta.item.item.id),
+        ...anteriores.filter(
+          (registro) => registro.item.id !== resposta.item.item.id,
+        ),
       ]);
       setItemSelecionado(null);
-      setResultado({ tipo: 'sucesso', item, quantidade, saldoMoedas: resposta.saldoMoedas });
+      setResultado({
+        tipo: "sucesso",
+        item,
+        quantidade,
+        saldoMoedas: resposta.saldoMoedas,
+      });
     } catch (error) {
       const mensagem =
-        error instanceof Error ? error.message : 'Não foi possível comprar o item.';
+        error instanceof Error
+          ? error.message
+          : "Não foi possível comprar o item.";
 
       setItemSelecionado(null);
 
       if (ehErroDeSaldo(mensagem)) {
-        setResultado({ tipo: 'saldo-insuficiente', item, quantidade, saldoMoedas });
+        setResultado({
+          tipo: "saldo-insuficiente",
+          item,
+          quantidade,
+          saldoMoedas,
+        });
       } else {
-        setFeedback({ tipo: 'erro', texto: mensagem });
+        setFeedback({ tipo: "erro", texto: mensagem });
       }
     } finally {
       setComprandoId(null);
+    }
+  };
+
+  // A ativacao so e oferecida ao Cafe do Foco: os demais consumiveis continuam
+  // no inventario ate que seus efeitos tenham uma regra de negocio propria.
+  const handleUsarItem = async (registro: InventarioItem) => {
+    setComprandoId(registro.item.id);
+    setFeedback(null);
+    try {
+      const resposta = await usarItem(registro.item.id);
+      setInventario((anteriores) =>
+        anteriores.map((atual) =>
+          atual.id === registro.id
+            ? { ...atual, quantidade: resposta.quantidadeRestante }
+            : atual,
+        ),
+      );
+      setItens((anteriores) =>
+        anteriores.map((atual) =>
+          atual.id === registro.item.id
+            ? { ...atual, quantidadePossuida: resposta.quantidadeRestante }
+            : atual,
+        ),
+      );
+      setFeedback({ tipo: "sucesso", texto: resposta.mensagem });
+    } catch (error) {
+      setFeedback({
+        tipo: "erro",
+        texto:
+          error instanceof Error
+            ? error.message
+            : "Não foi possível utilizar o item.",
+      });
+    } finally {
+      setComprandoId(null);
+      setItemParaUsar(null);
     }
   };
 
@@ -249,9 +315,12 @@ export const LojaPage = () => {
               <ShoppingBag size={26} />
             </span>
             <div>
-              <h1 className="text-2xl font-black text-[#0A1128]">Loja Virtual</h1>
+              <h1 className="text-2xl font-black text-[#0A1128]">
+                Loja Virtual
+              </h1>
               <p className="text-sm font-medium text-[#0A1128]/55">
-                Use suas moedas ATP para turbinar seus estudos e personalizar o seu perfil.
+                Use suas moedas ATP para turbinar seus estudos e personalizar o
+                seu perfil.
               </p>
             </div>
           </div>
@@ -264,18 +333,28 @@ export const LojaPage = () => {
               <p className="text-[10px] font-black uppercase tracking-widest text-[#0A1128]/50">
                 Seu saldo
               </p>
-              <p className="text-lg font-black tabular-nums text-[#0A1128]">{saldoMoedas} ATP</p>
+              <p className="text-lg font-black tabular-nums text-[#0A1128]">
+                {saldoMoedas} ATP
+              </p>
             </div>
           </div>
         </header>
 
-        {/* Banner de erro de compra (exceto saldo, que tem modal proprio); some sozinho. */}
+        {/* Retorno de compra ou uso; some sozinho para nao interromper a navegacao. */}
         {feedback && (
           <div
             role="status"
-            className="mt-5 flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700"
+            className={`mt-5 flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold ${
+              feedback.tipo === "sucesso"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-rose-200 bg-rose-50 text-rose-700"
+            }`}
           >
-            <X size={18} />
+            {feedback.tipo === "sucesso" ? (
+              <Check size={18} />
+            ) : (
+              <X size={18} />
+            )}
             {feedback.texto}
           </div>
         )}
@@ -286,29 +365,31 @@ export const LojaPage = () => {
             const Icon = categoria.icon;
             const ativa = abaAtiva === categoria.key;
             const contagem =
-              categoria.key === 'INVENTARIO'
+              categoria.key === "INVENTARIO"
                 ? inventario.length
-                : categoria.key === 'TODOS'
+                : categoria.key === "TODOS"
                   ? itens.length
-                  : contagemPorTipo[categoria.key] ?? 0;
+                  : (contagemPorTipo[categoria.key] ?? 0);
 
             return (
               <button
                 key={categoria.key}
                 type="button"
                 onClick={() => setAbaAtiva(categoria.key)}
-                aria-current={ativa ? 'page' : undefined}
+                aria-current={ativa ? "page" : undefined}
                 className={`flex cursor-pointer items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-colors ${
                   ativa
-                    ? 'bg-[#0A1128] text-white shadow-md'
-                    : 'border border-[#0A1128]/10 bg-white text-[#0A1128]/70 hover:bg-[#0A1128]/5'
+                    ? "bg-[#0A1128] text-white shadow-md"
+                    : "border border-[#0A1128]/10 bg-white text-[#0A1128]/70 hover:bg-[#0A1128]/5"
                 }`}
               >
                 <Icon size={18} />
                 {categoria.label}
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-black tabular-nums ${
-                    ativa ? 'bg-white/20 text-white' : 'bg-[#0A1128]/5 text-[#0A1128]/50'
+                    ativa
+                      ? "bg-white/20 text-white"
+                      : "bg-[#0A1128]/5 text-[#0A1128]/50"
                   }`}
                 >
                   {contagem}
@@ -319,25 +400,31 @@ export const LojaPage = () => {
         </nav>
 
         {/* Contagem de itens e botao que alterna a ordenacao por preco. */}
-        {!carregando && !erro && abaAtiva !== 'INVENTARIO' && itensVisiveis.length > 0 && (
-          <div className="mt-5 flex items-center justify-between">
-            <p className="text-sm font-bold text-[#0A1128]/50">
-              {itensVisiveis.length} {itensVisiveis.length === 1 ? 'item' : 'itens'}
-            </p>
-            <button
-              type="button"
-              onClick={() => setOrdenacao((atual) => (atual === 'asc' ? 'desc' : 'asc'))}
-              className="flex cursor-pointer items-center gap-2 rounded-full border border-[#0A1128]/10 bg-white px-4 py-2 text-sm font-bold text-[#0A1128]/70 transition-colors hover:bg-[#0A1128]/5"
-            >
-              {ordenacao === 'asc' ? (
-                <ArrowUpNarrowWide size={16} />
-              ) : (
-                <ArrowDownWideNarrow size={16} />
-              )}
-              Preço: {ordenacao === 'asc' ? 'mais baratos' : 'mais caros'}
-            </button>
-          </div>
-        )}
+        {!carregando &&
+          !erro &&
+          abaAtiva !== "INVENTARIO" &&
+          itensVisiveis.length > 0 && (
+            <div className="mt-5 flex items-center justify-between">
+              <p className="text-sm font-bold text-[#0A1128]/50">
+                {itensVisiveis.length}{" "}
+                {itensVisiveis.length === 1 ? "item" : "itens"}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setOrdenacao((atual) => (atual === "asc" ? "desc" : "asc"))
+                }
+                className="flex cursor-pointer items-center gap-2 rounded-full border border-[#0A1128]/10 bg-white px-4 py-2 text-sm font-bold text-[#0A1128]/70 transition-colors hover:bg-[#0A1128]/5"
+              >
+                {ordenacao === "asc" ? (
+                  <ArrowUpNarrowWide size={16} />
+                ) : (
+                  <ArrowDownWideNarrow size={16} />
+                )}
+                Preço: {ordenacao === "asc" ? "mais baratos" : "mais caros"}
+              </button>
+            </div>
+          )}
 
         {/* Area principal: alterna entre carregando, erro, inventario e catalogo. */}
         <section className="mt-6">
@@ -356,8 +443,12 @@ export const LojaPage = () => {
                 Tentar novamente
               </button>
             </div>
-          ) : abaAtiva === 'INVENTARIO' ? (
-            <InventarioGrid inventario={inventario} />
+          ) : abaAtiva === "INVENTARIO" ? (
+            <InventarioGrid
+              inventario={inventario}
+              usandoId={comprandoId}
+              onUsar={(registro) => setItemParaUsar(registro)}
+            />
           ) : (
             <CatalogoGrid
               itens={itensVisiveis}
@@ -375,12 +466,26 @@ export const LojaPage = () => {
           saldoMoedas={saldoMoedas}
           comprando={comprandoId === itemSelecionado.id}
           onCancelar={() => setItemSelecionado(null)}
-          onConfirmar={(quantidade) => void handleConfirmarCompra(itemSelecionado, quantidade)}
+          onConfirmar={(quantidade) =>
+            void handleConfirmarCompra(itemSelecionado, quantidade)
+          }
         />
       )}
 
       {resultado && (
-        <ModalResultadoCompra resultado={resultado} onFechar={() => setResultado(null)} />
+        <ModalResultadoCompra
+          resultado={resultado}
+          onFechar={() => setResultado(null)}
+        />
+      )}
+
+      {itemParaUsar && (
+        <ModalConfirmarUso
+          registro={itemParaUsar}
+          usando={comprandoId === itemParaUsar.item.id}
+          onCancelar={() => setItemParaUsar(null)}
+          onConfirmar={() => void handleUsarItem(itemParaUsar)}
+        />
       )}
     </div>
   );
@@ -438,9 +543,13 @@ const CatalogoGrid = ({
             </button>
 
             <div className="flex w-full flex-1 flex-col items-center gap-2 text-center">
-              <h3 className="line-clamp-2 text-sm font-black text-[#0A1128]">{item.nome}</h3>
+              <h3 className="line-clamp-2 text-sm font-black text-[#0A1128]">
+                {item.nome}
+              </h3>
               {item.consumivel && item.efeito && (
-                <p className="line-clamp-2 text-xs font-medium text-[#0A1128]/55">{item.efeito}</p>
+                <p className="line-clamp-2 text-xs font-medium text-[#0A1128]/55">
+                  {item.efeito}
+                </p>
               )}
               <PrecoEtiqueta preco={item.precoMoedas} />
             </div>
@@ -457,19 +566,19 @@ const CatalogoGrid = ({
                 disabled={comprandoId === item.id}
                 className={`flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-bold transition-colors disabled:cursor-not-allowed ${
                   semSaldo
-                    ? 'bg-[#0A1128]/10 text-[#0A1128]/45 hover:bg-[#0A1128]/15'
-                    : 'bg-[#F97316] text-white hover:bg-[#ea670c]'
+                    ? "bg-[#0A1128]/10 text-[#0A1128]/45 hover:bg-[#0A1128]/15"
+                    : "bg-[#F97316] text-white hover:bg-[#ea670c]"
                 }`}
               >
                 {comprandoId === item.id ? (
-                  'Comprando...'
+                  "Comprando..."
                 ) : semSaldo ? (
                   <>
                     <Lock size={15} />
                     Sem saldo
                   </>
                 ) : (
-                  'Comprar'
+                  "Comprar"
                 )}
               </button>
             )}
@@ -486,7 +595,15 @@ const CatalogoGrid = ({
  * convidando a comprar quando ainda nao ha nenhum item.
  * @param inventario itens que o aluno ja possui
  */
-const InventarioGrid = ({ inventario }: { inventario: InventarioItem[] }) => {
+const InventarioGrid = ({
+  inventario,
+  usandoId,
+  onUsar,
+}: {
+  inventario: InventarioItem[];
+  usandoId: string | null;
+  onUsar: (registro: InventarioItem) => void;
+}) => {
   if (inventario.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
@@ -512,9 +629,26 @@ const InventarioGrid = ({ inventario }: { inventario: InventarioItem[] }) => {
             {registro.item.nome}
           </h3>
           {registro.item.consumivel ? (
-            <span className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#0A1128]/5 px-3 py-2 text-sm font-bold tabular-nums text-[#0A1128]">
-              {registro.quantidade ?? 1} {(registro.quantidade ?? 1) === 1 ? 'unidade' : 'unidades'}
-            </span>
+            <>
+              <span className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#0A1128]/5 px-3 py-2 text-sm font-bold tabular-nums text-[#0A1128]">
+                {registro.quantidade ?? 1}{" "}
+                {(registro.quantidade ?? 1) === 1 ? "unidade" : "unidades"}
+              </span>
+              {registro.item.codigo === "potencializador-cafe-do-foco" && (
+                <button
+                  type="button"
+                  disabled={
+                    (registro.quantidade ?? 0) < 1 ||
+                    usandoId === registro.item.id
+                  }
+                  onClick={() => onUsar(registro)}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#14D5C2] px-3 py-2 text-sm font-bold text-white transition-colors hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Zap size={16} />{" "}
+                  {usandoId === registro.item.id ? "Ativando..." : "Usar"}
+                </button>
+              )}
+            </>
           ) : (
             <span className="flex w-full items-center justify-center gap-1.5 rounded-full bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-600">
               <Check size={16} />
@@ -526,3 +660,54 @@ const InventarioGrid = ({ inventario }: { inventario: InventarioItem[] }) => {
     </div>
   );
 };
+
+const ModalConfirmarUso = ({
+  registro,
+  usando,
+  onCancelar,
+  onConfirmar,
+}: {
+  registro: InventarioItem;
+  usando: boolean;
+  onCancelar: () => void;
+  onConfirmar: () => void;
+}) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+    >
+      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#14D5C2]/15 text-[#0E9384]">
+        <Zap size={23} />
+      </div>
+      <h2 className="text-lg font-black text-[#0A1128]">Usar Café do Foco?</h2>
+      <p className="mt-2 text-sm leading-relaxed text-[#0A1128]/65">
+        Uma unidade será consumida agora. O próximo acerto que conceder ATP
+        valerá o dobro.
+      </p>
+      <p className="mt-3 text-xs font-bold text-[#0A1128]/45">
+        Restarão {Math.max(0, (registro.quantidade ?? 0) - 1)} unidades no
+        inventário.
+      </p>
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          disabled={usando}
+          onClick={onCancelar}
+          className="rounded-full px-4 py-2 text-sm font-bold text-[#0A1128]/60"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          disabled={usando}
+          onClick={onConfirmar}
+          className="rounded-full bg-[#14D5C2] px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
+        >
+          {usando ? "Ativando..." : "Confirmar uso"}
+        </button>
+      </div>
+    </div>
+  </div>
+);
