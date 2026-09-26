@@ -1,5 +1,6 @@
 import { httpClient } from '../../../../src/shared/api/httpClient';
 import {
+  buscarInventarioCompleto,
   comprarItem,
   listarCatalogo,
   listarInventario,
@@ -73,7 +74,7 @@ describe('lojaService', () => {
     expect(resultado).toEqual(inventario);
   });
 
-  it('deve comprar um item enviando o itemLojaId', async () => {
+  it('deve comprar um item enviando o itemLojaId e quantidade 1 por padrão', async () => {
     const compra = {
       mensagem: 'Item comprado com sucesso.',
       saldoMoedas: 4999,
@@ -88,13 +89,58 @@ describe('lojaService', () => {
 
     const resultado = await comprarItem('item-1');
 
-    expect(httpClient.post).toHaveBeenCalledWith('/loja/comprar', { itemLojaId: 'item-1' });
+    expect(httpClient.post).toHaveBeenCalledWith('/loja/comprar', {
+      itemLojaId: 'item-1',
+      quantidade: 1,
+    });
     expect(resultado).toEqual(compra);
+  });
+
+  it('deve enviar a quantidade escolhida ao comprar um consumível', async () => {
+    (httpClient.post as jest.Mock).mockResolvedValue({ data: {} });
+
+    await comprarItem('dica-1', 3);
+
+    expect(httpClient.post).toHaveBeenCalledWith('/loja/comprar', {
+      itemLojaId: 'dica-1',
+      quantidade: 3,
+    });
   });
 
   it('deve lançar erro tratado quando a requisição falhar', async () => {
     (httpClient.post as jest.Mock).mockRejectedValue(new Error('falha de rede'));
 
     await expect(comprarItem('item-1')).rejects.toThrow('Erro simulado pelo mock');
+  });
+
+  it('deve achatar o inventário completo mantendo a quantidade no registro', async () => {
+    (httpClient.get as jest.Mock).mockResolvedValue({
+      data: {
+        mensagem: 'ok',
+        dados: [
+          {
+            ...itemCatalogo,
+            id: 'dica-1',
+            tipo: 'DICA',
+            consumivel: true,
+            inventarioId: 'inv-9',
+            equipado: false,
+            origem: 'COMPRA',
+            quantidade: 4,
+          },
+        ],
+      },
+    });
+
+    const [registro] = await buscarInventarioCompleto();
+
+    expect(httpClient.get).toHaveBeenCalledWith('/inventario/meuInventario');
+    expect(registro).toMatchObject({
+      id: 'inv-9',
+      quantidade: 4,
+      adquiridoEm: null,
+      item: { id: 'dica-1', consumivel: true },
+    });
+    expect(registro.item).not.toHaveProperty('quantidade');
   });
 });

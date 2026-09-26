@@ -76,6 +76,23 @@ export const CosmeticPreview = ({ item, grande = false }: CosmeticPreviewProps) 
     );
   }
 
+  // Consumiveis (dica/potencializador): icone branco sobre o gradiente do item.
+  if (item.tipo === 'DICA' || item.tipo === 'POTENCIALIZADOR') {
+    const src = item.previewImagemUrl ?? item.imagemUrl;
+    return (
+      <div
+        className={`${dimensao} flex items-center justify-center rounded-2xl p-4 shadow-sm`}
+        style={{ background: item.valor ?? 'linear-gradient(135deg, #71edc8 0%, #00A88F 100%)' }}
+      >
+        {src ? (
+          <img src={src} alt={item.nome} className="h-full w-full object-contain drop-shadow" />
+        ) : (
+          <ImageOff className="text-white/70" size={grande ? 40 : 28} />
+        )}
+      </div>
+    );
+  }
+
   // Icone de perfil: a logo premium tem render proprio; demais usam imagem ou fallback.
   if (item.tipo === 'ICONE_PERFIL') {
     if (item.codigo === CODIGO_LOGO_PREMIUM) {

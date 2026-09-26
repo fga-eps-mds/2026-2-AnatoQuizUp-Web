@@ -1,7 +1,15 @@
-// Tipos do dominio da loja/inventario de cosmeticos.
+// Tipos do dominio da loja/inventario: cosmeticos e itens consumiveis.
 
-// Categorias de item cosmetico e a origem pela qual entrou no inventario.
-export type TipoItemLoja = 'ICONE_PERFIL' | 'MOLDURA' | 'AVATAR' | 'TITULO' | 'PLANO_FUNDO';
+// Categorias de item e a origem pela qual entrou no inventario. DICA e
+// POTENCIALIZADOR sao consumiveis (compraveis varias vezes, com quantidade).
+export type TipoItemLoja =
+  | 'ICONE_PERFIL'
+  | 'MOLDURA'
+  | 'AVATAR'
+  | 'TITULO'
+  | 'PLANO_FUNDO'
+  | 'DICA'
+  | 'POTENCIALIZADOR';
 export type OrigemItemInventario = 'COMPRA' | 'CONQUISTA';
 
 // Item como aparece no catalogo da loja (com preco e flags de disponibilidade/posse).
@@ -17,19 +25,31 @@ export type ItemLoja = {
   previewImagemUrl: string | null;
   ativo: boolean;
   disponivelNaLoja: boolean;
+  // true em DICA/POTENCIALIZADOR: pode ser comprado varias vezes.
+  consumivel?: boolean;
+  // Texto do efeito do item consumivel (ex.: "+30 segundos na questao").
+  efeito?: string | null;
+  // Cosmetico ja possuido (sempre false para consumiveis).
   adquirido: boolean;
+  // Unidades que o aluno ja possui deste item (0 se nenhuma).
+  quantidadePossuida?: number;
 };
 
 // Item ja possuido pelo usuario (sem os campos exclusivos da vitrine).
-export type ItemInventario = Omit<ItemLoja, 'adquirido' | 'disponivelNaLoja'> & {
+export type ItemInventario = Omit<
+  ItemLoja,
+  'adquirido' | 'disponivelNaLoja' | 'quantidadePossuida'
+> & {
   disponivelNaLoja?: boolean;
 };
 
-// Registro do inventario: o item possuido + metadados (equipado, origem, data).
+// Registro do inventario: o item possuido + metadados (equipado, origem, quantidade, data).
 export type InventarioItem = {
   id: string;
   equipado: boolean;
   origem?: OrigemItemInventario;
+  // Unidades possuidas (so passa de 1 em itens consumiveis).
+  quantidade?: number;
   adquiridoEm: string | null;
   item: ItemInventario;
 };
@@ -39,6 +59,7 @@ export type InventarioItemPlano = ItemInventario & {
   inventarioId: string;
   equipado: boolean;
   origem: OrigemItemInventario;
+  quantidade?: number;
   adquiridoEm?: string;
 };
 
@@ -56,10 +77,12 @@ export type RespostaPaginada<T> = {
   metadados: MetadadosPaginacao;
 };
 
-// Resposta da compra de um item: mensagem, novo saldo de moedas e item adquirido.
+// Resposta da compra de um item: mensagem, novo saldo de moedas, unidades
+// compradas e o registro do item no inventario (com a quantidade total atualizada).
 export type CompraItemResponse = {
   mensagem: string;
   saldoMoedas: number;
+  quantidadeComprada?: number;
   item: InventarioItem;
 };
 
@@ -78,10 +101,11 @@ export type RespostaInventarioCompleto = {
 
 /** Converte os registros achatados do inventario para o formato aninhado (item + metadados). */
 export const normalizarInventarioPlano = (registros: InventarioItemPlano[]): InventarioItem[] =>
-  registros.map(({ inventarioId, equipado, origem, adquiridoEm, ...item }) => ({
+  registros.map(({ inventarioId, equipado, origem, quantidade, adquiridoEm, ...item }) => ({
     id: inventarioId,
     equipado,
     origem,
+    quantidade,
     adquiridoEm: adquiridoEm ?? null,
     item,
   }));
