@@ -4,6 +4,8 @@ import type { LoginResponse } from './authService';
 
 // E-mails de teste que disparam comportamentos especificos no mock.
 const STUDENT_EMAIL = 'aluno@unb.br';
+const AVATAR_DEMO_EMAIL = 'avatar@anatoquizup.local';
+const AVATAR_DEMO_PASSWORD = 'Avatar2026!';
 const PROFESSOR_EMAIL = 'professor@unb.br';
 const DISABLED_EMAIL = 'desativado@unb.br';
 
@@ -22,6 +24,19 @@ const STUDENT_USER: User = {
 };
 
 // Usuario professor fixo retornado pelo mock.
+const AVATAR_DEMO_USER: User = {
+  id: 'avatar-demo-local',
+  name: 'Aluno Avatar',
+  nickname: 'avatar-demo',
+  email: AVATAR_DEMO_EMAIL,
+  role: 'STUDENT',
+  status: 'ACTIVE',
+  authProvider: 'LOCAL',
+  course: 'Medicina',
+  institution: 'Instituição de exemplo',
+  period: 1,
+};
+
 const PROFESSOR_USER: User = {
   id: '123e4567-e89b-12d3-a456-426614174001',
   name: 'Professor UnB',
@@ -38,6 +53,11 @@ const PROFESSOR_USER: User = {
 const STUDENT_TOKENS: LoginResponse = {
   accessToken: 'mock-access-token',
   refreshToken: 'mock-refresh-token',
+};
+
+const AVATAR_DEMO_TOKENS: LoginResponse = {
+  accessToken: 'mock-avatar-demo-access-token',
+  refreshToken: 'mock-avatar-demo-refresh-token',
 };
 
 const PROFESSOR_TOKENS: LoginResponse = {
@@ -75,9 +95,13 @@ export const loginWithMockCredencials = async (
   email: string,
   password: string,
 ): Promise<LoginResponse> => {
-  void password;
-
   const normalizedEmail = email.trim().toLowerCase();
+
+  if (normalizedEmail === AVATAR_DEMO_EMAIL) {
+    if (password !== AVATAR_DEMO_PASSWORD) throw new Error('Email ou senha invalidos');
+    authenticatedMockUser = AVATAR_DEMO_USER;
+    return AVATAR_DEMO_TOKENS;
+  }
 
   if (normalizedEmail === DISABLED_EMAIL) {
     throw new Error('Conta desativada. Entre em contato com o administrador.');
@@ -99,6 +123,10 @@ export const loginWithMockCredencials = async (
 /** Retorna o usuario mock correspondente ao token salvo (professor/aluno). */
 export const getAuthenticatedUserMock = async (): Promise<User> => {
   const storedAccessToken = getStoredAccessToken();
+
+  if (storedAccessToken === AVATAR_DEMO_TOKENS.accessToken) {
+    return authenticatedMockUser.id === AVATAR_DEMO_USER.id ? authenticatedMockUser : AVATAR_DEMO_USER;
+  }
 
   if (storedAccessToken === PROFESSOR_TOKENS.accessToken) {
     return authenticatedMockUser.role === 'PROFESSOR' ? authenticatedMockUser : PROFESSOR_USER;

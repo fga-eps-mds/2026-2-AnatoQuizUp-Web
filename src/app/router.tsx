@@ -1,3 +1,7 @@
+import { PreviewLayout } from '../pages/aluno/avatar/PreviewLayout';
+import { ProfilePreviewPage } from '../pages/aluno/avatar/ProfilePreviewPage';
+import { AvatarPreviewPage } from '../pages/aluno/avatar/AvatarPreviewPage';
+import { AvatarPage } from '../pages/aluno/avatar/AvatarPage';
 import { Routes, Route, Navigate } from "react-router-dom";
 import { LoginPage } from "../pages/login/index";
 import { HomePage } from "../pages/home/index";
@@ -44,8 +48,18 @@ import { NotFoundPage } from '../pages/not-found';
  * via ProtectedRoute. Qualquer caminho desconhecido cai na pagina 404.
  */
 export const AppRouter = () => {
+  const isLocalDevelopment =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
   return (
     <Routes>
+      {/* Prévia disponível apenas no servidor local de desenvolvimento. */}
+      {isLocalDevelopment && <Route element={<PreviewLayout />}>
+        <Route path="/perfil-preview" element={<ProfilePreviewPage />} />
+        <Route path="/avatar-preview" element={<AvatarPreviewPage />} />
+      </Route>}
+
       {/* Rotas publicas: autenticacao e recuperacao de senha. */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<RegisterPage />} />
@@ -74,6 +88,8 @@ export const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/aluno/perfil/avatar" element={<ProtectedRoute allowedRoles={['STUDENT']}><AvatarPage /></ProtectedRoute>} />
 
         {/* NOVA ROTA DO DASHBOARD */}
         <Route

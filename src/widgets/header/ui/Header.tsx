@@ -4,6 +4,7 @@
 // Em telas grandes vira sidebar fixa; em telas pequenas, um drawer deslizante.
 import { useEffect, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import type { User } from "../../../entities/user/model/types";
 import { Home, LogOut, Coins, Menu, Users, X, Newspaper, BookOpen, List, Calendar, PieChart, ChevronRight, ShoppingBag, Trophy, Medal } from "lucide-react";
 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -26,8 +27,9 @@ type NavItem = {
  * Componente do header/sidebar. Renderiza a navegacao conforme o papel do
  * usuario logado e o rodape com saldo, perfil e logout.
  */
-export const Header = () => {
-  const { user, logout } = useAuth();
+export const Header = ({ previewUser }: { previewUser?: User } = {}) => {
+  const { user: authenticatedUser, logout } = useAuth();
+  const user = previewUser ?? authenticatedUser;
   const saldoMoedas = useStudentCoinsStore((state) => state.saldoMoedas);
   const cosmeticos = useEquippedCosmeticsStore((state) => state.cosmeticos);
   const navigate = useNavigate();
@@ -261,7 +263,8 @@ export const Header = () => {
   // Itens do menu e flags derivadas do papel (saldo e perfil so para aluno).
   const navItems = buildNavItems(user.role);
   const shouldShowCoins = user.role === "STUDENT";
-  const isPerfilAlunoActive = location.pathname.startsWith("/aluno/perfil");
+  const isPerfilAlunoActive = location.pathname.startsWith("/aluno/perfil") ||
+    (Boolean(previewUser) && ["/perfil-preview", "/avatar-preview"].includes(location.pathname));
 
   // Executa a acao do item e fecha o drawer mobile.
   const handleSelect = (item: NavItem) => {
@@ -271,7 +274,7 @@ export const Header = () => {
 
   // Abre o perfil do aluno e fecha o drawer.
   const handlePerfilAluno = () => {
-    navigate("/aluno/perfil");
+    navigate(previewUser ? "/perfil-preview" : "/aluno/perfil");
     setIsDrawerOpen(false);
   };
 
