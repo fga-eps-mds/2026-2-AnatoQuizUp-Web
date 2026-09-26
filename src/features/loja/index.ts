@@ -3,7 +3,8 @@ export {
   comprarItem,
   listarCatalogo,
   listarInventario,
-} from './lojaService';
+  usarItem,
+} from "./lojaService";
 export type {
   CompraItemResponse,
   InventarioItem,
@@ -13,5 +14,5 @@ export type {
   RespostaPaginada,
   TipoItemLoja,
   OrigemItemInventario,
-} from './types';
-export { normalizarInventarioPlano } from './types';
+} from "./types";
+export { normalizarInventarioPlano } from "./types";
