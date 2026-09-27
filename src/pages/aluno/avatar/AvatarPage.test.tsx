@@ -25,11 +25,26 @@ describe('AvatarPage', () => {
     expect(screen.getByRole('button', { name: 'Nenhum' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('mostra as abas Roupas e Acessórios desabilitadas (fora de escopo)', () => {
+  it('mostra a aba Roupas desabilitada (fora de escopo)', () => {
     renderPage();
 
     expect(screen.getByRole('tab', { name: 'Roupas' })).toBeDisabled();
-    expect(screen.getByRole('tab', { name: 'Acessórios' })).toBeDisabled();
+  });
+
+  it('a aba Acessórios lista os itens liberados e permite equipar um', () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Acessórios' }));
+
+    expect(screen.getByRole('button', { name: 'Nenhum' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Coroa' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Óculos' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Chapéu de formatura' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Coroa' }));
+
+    expect(screen.getByRole('button', { name: 'Coroa' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
   });
 
   it('habilita Salvar/Cancelar somente após alterar a seleção', () => {
