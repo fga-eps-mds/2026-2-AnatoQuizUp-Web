@@ -112,6 +112,36 @@ describe('ProfileIdentityCard', () => {
     expect(screen.queryByRole('img', { name: 'Icone Cerebro' })).not.toBeInTheDocument();
   });
 
+  it('compoe rosto e cabelo quando nao ha avatar nem icone equipados', () => {
+    const rosto = criarItem('ROSTO', { nome: 'Rosto Padrão', imagemUrl: '/rosto.png' });
+    const cabelo = criarItem('CABELO', { nome: 'Moicano', imagemUrl: '/cabelo.png' });
+
+    render(
+      <ProfileIdentityCard
+        identidade={identidade}
+        cosmeticos={{ ROSTO: rosto, CABELO: cabelo }}
+      />,
+    );
+
+    expect(screen.getByRole('img', { name: 'Rosto Padrão' })).toHaveAttribute('src', '/rosto.png');
+    expect(screen.getByRole('img', { name: 'Moicano' })).toHaveAttribute('src', '/cabelo.png');
+  });
+
+  it('prioriza icone sobre rosto/cabelo quando ambos estao equipados', () => {
+    const icone = criarItem('ICONE_PERFIL', { nome: 'Icone Cerebro', imagemUrl: '/icone.png' });
+    const rosto = criarItem('ROSTO', { nome: 'Rosto Padrão', imagemUrl: '/rosto.png' });
+
+    render(
+      <ProfileIdentityCard
+        identidade={identidade}
+        cosmeticos={{ ICONE_PERFIL: icone, ROSTO: rosto }}
+      />,
+    );
+
+    expect(screen.getByRole('img', { name: 'Icone Cerebro' })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Rosto Padrão' })).not.toBeInTheDocument();
+  });
+
   it('renderiza icone de perfil quando nao ha avatar', () => {
     const icone = criarItem('ICONE_PERFIL', {
       nome: 'Icone Cerebro',
