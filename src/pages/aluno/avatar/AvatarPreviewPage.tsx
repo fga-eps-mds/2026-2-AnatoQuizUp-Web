@@ -2,13 +2,8 @@ import { useState } from 'react';
 import { Pencil, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import avatarBase from '../../../shared/assets/avatar/avatar-base.png';
-import {
-  AparenciaPanel,
-  APARENCIA_PADRAO,
-  HUE_ROTATE_COR,
-  HairThumb,
-  type AparenciaAvatar,
-} from './AparenciaPanel';
+import { AparenciaPanel, HairThumb } from './AparenciaPanel';
+import { APARENCIA_PADRAO, HUE_ROTATE_COR, type AparenciaAvatar } from './aparencia';
 import '../perfil/ui/profile.css';
 
 const CHAVE_PREVIEW = 'anatoquizup:avatar:preview-local';

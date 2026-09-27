@@ -1,15 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pencil, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../../app/providers/AuthProvider';
 import avatarBase from '../../../shared/assets/avatar/avatar-base.png';
-import {
-  AparenciaPanel,
-  APARENCIA_PADRAO,
-  HUE_ROTATE_COR,
-  HairThumb,
-  type AparenciaAvatar,
-} from './AparenciaPanel';
+import { AparenciaPanel, HairThumb } from './AparenciaPanel';
+import { APARENCIA_PADRAO, HUE_ROTATE_COR, type AparenciaAvatar } from './aparencia';
 import '../perfil/ui/profile.css';
 
 const chaveAvatar = (userId: string) => `anatoquizup:avatar:${userId}`;
@@ -36,12 +31,16 @@ export function AvatarPage() {
   const [salvo, setSalvo] = useState<AparenciaAvatar>(APARENCIA_PADRAO);
   const [rascunho, setRascunho] = useState<AparenciaAvatar>(APARENCIA_PADRAO);
 
-  useEffect(() => {
-    if (!user) return;
+  // Carrega a aparencia salva assim que o usuario autenticado fica disponivel.
+  // Ajustado durante a renderizacao (em vez de useEffect) para nao disparar um
+  // segundo ciclo de commit so para popular o estado inicial.
+  const [carregadoParaUserId, setCarregadoParaUserId] = useState<string | null>(null);
+  if (user && user.id !== carregadoParaUserId) {
+    setCarregadoParaUserId(user.id);
     const aparencia = carregarAparencia(user.id);
     setSalvo(aparencia);
     setRascunho(aparencia);
-  }, [user]);
+  }
 
   if (!user) return null;
 

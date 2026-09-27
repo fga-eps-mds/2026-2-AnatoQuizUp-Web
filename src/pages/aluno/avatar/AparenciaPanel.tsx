@@ -3,31 +3,10 @@ import { Check, X } from 'lucide-react';
 import cabeloLoiro from '../../../shared/assets/avatar/cabelo/cabelo-loiro.png';
 import cabeloCacheado from '../../../shared/assets/avatar/cabelo/cabelo-cacheado.png';
 import cabeloMoicano from '../../../shared/assets/avatar/cabelo/cabelo-moicano.png';
+import type { AparenciaAvatar, CorCerebro, EstiloCabelo } from './aparencia';
 
 // Personalizacao de aparencia do avatar-cerebro: cor do cerebro + estilo de cabelo.
 // Roupas/Acessorios (issues #33/#34) aparecem como abas desabilitadas, fora de escopo aqui.
-
-export type CorCerebro = 'rosa' | 'roxo' | 'azul' | 'verde' | 'laranja' | 'amarelo';
-export type EstiloCabelo = 'loiro' | 'cacheado' | 'moicano';
-
-export type AparenciaAvatar = {
-  corCerebro: CorCerebro;
-  cabelo: EstiloCabelo | null;
-};
-
-export const APARENCIA_PADRAO: AparenciaAvatar = { corCerebro: 'rosa', cabelo: null };
-
-// ponytail: recolore a arte base (rosa) girando o matiz via CSS filter, em vez de
-// exigir uma ilustracao por cor. Graus aproximados; se alguma cor destoar muito,
-// o upgrade natural e substituir por uma arte dedicada para aquele tom.
-export const HUE_ROTATE_COR: Record<CorCerebro, number> = {
-  rosa: 0,
-  roxo: 300,
-  azul: 235,
-  verde: 170,
-  laranja: 50,
-  amarelo: 80,
-};
 
 const CORES: { id: CorCerebro; hex: string; label: string }[] = [
   { id: 'rosa', hex: '#F87171', label: 'Rosa' },
