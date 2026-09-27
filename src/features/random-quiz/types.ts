@@ -1,5 +1,12 @@
-import type { QuestionTopic, ApiQuestionType, ApiQuestionDifficulty, QuestionAlternativeKey, PaginationMetadata, QuestionAlternatives } from "../manage-questions";
-import type { ConquistaDesbloqueada } from '../achievements';
+import type {
+  QuestionTopic,
+  ApiQuestionType,
+  ApiQuestionDifficulty,
+  QuestionAlternativeKey,
+  PaginationMetadata,
+  QuestionAlternatives,
+} from "../manage-questions";
+import type { ConquistaDesbloqueada } from "../achievements";
 
 // Tipos do dominio do quiz avulso (random-quiz).
 
@@ -16,17 +23,16 @@ export type QuizQuestion = {
 
 // Resposta paginada da listagem de questoes do quiz.
 export type ListQuizQuestionResponse = {
-    dados: QuizQuestion[];
-    metadados: PaginationMetadata;
-}
-
+  dados: QuizQuestion[];
+  metadados: PaginationMetadata;
+};
 
 // Resposta do aluno a uma questao (alternativa marcada).
 export type QuestaoQuizAnwser = {
-    questaoId: string;
-    tipo: ApiQuestionType;
-    respostaMarcada: QuestionAlternativeKey;
-}
+  questaoId: string;
+  tipo: ApiQuestionType;
+  respostaMarcada: QuestionAlternativeKey;
+};
 
 // Feedback retornado apos responder: correcao, recompensas e conquistas desbloqueadas.
 export type QuestaoQuizFeedback = {
@@ -37,15 +43,16 @@ export type QuestaoQuizFeedback = {
   saldoMoedas: number;
   moedasJaConcedidas: boolean;
   conquistasDesbloqueadas: ConquistaDesbloqueada[];
-}
+  potencializadorAplicado: { nome: string; bonusMoedas: number } | null;
+};
 
 // Saldo de moedas (ATP) do aluno.
 export type SaldoMoedasResponse = {
   saldoMoedas: number;
-}
+};
 
 // Niveis de dificuldade e a contagem de questoes por nivel.
-export type Dificuldade = "FACIL" | "MEDIA" | "DIFICIL"
+export type Dificuldade = "FACIL" | "MEDIA" | "DIFICIL";
 type QuantidadePorDificuldade = Record<Dificuldade, number>;
 
 // Tema com o total de questoes e o detalhamento por dificuldade.
@@ -53,7 +60,7 @@ export type QuantidadeQuestoesTema = {
   nome: string;
   totalQuestoes: number;
   porDificuldade: QuantidadePorDificuldade;
-}
+};
 
 // Resposta com a contagem de questoes disponiveis por tema.
 export type QuantidadeQuestoesTemaResponse = {
