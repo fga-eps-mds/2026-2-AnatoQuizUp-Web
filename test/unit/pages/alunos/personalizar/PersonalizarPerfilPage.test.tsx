@@ -87,6 +87,60 @@ const ITEM_CORUJA_EQUIPADO = {
   ativo: ITEM_CORUJA.ativo,
 };
 
+const ITEM_ROSTO = {
+  inventarioId: 'inventario-3',
+  id: 'item-rosto-1',
+  codigo: 'rosto-padrao',
+  nome: 'Rosto Padrão',
+  descricao: null,
+  tipo: 'ROSTO',
+  precoMoedas: 0,
+  valor: null,
+  imagemUrl: null,
+  previewImagemUrl: null,
+  ativo: true,
+  equipado: false,
+  origem: 'COMPRA',
+};
+// So existe no catalogo (nao esta no inventario) — usado para testar o bloqueio.
+const ITEM_CABELO_BLOQUEADO = {
+  inventarioId: 'nao-possuido',
+  id: 'item-cabelo-1',
+  codigo: 'cabelo-moicano',
+  nome: 'Moicano Colorido',
+  descricao: null,
+  tipo: 'CABELO',
+  precoMoedas: 250,
+  valor: null,
+  imagemUrl: null,
+  previewImagemUrl: null,
+  ativo: true,
+  equipado: false,
+  origem: 'COMPRA',
+};
+
+// Catalogo (GET /loja/catalogo) correspondente aos itens de inventario acima:
+// a pagina agora busca inventario + catalogo em paralelo para poder mostrar
+// itens ainda nao adquiridos (bloqueados).
+const catalogoDe = (...itens: Array<typeof ITEM_CORUJA>) => ({
+  data: {
+    dados: itens.map((item) => ({
+      id: item.id,
+      codigo: item.codigo,
+      nome: item.nome,
+      descricao: item.descricao,
+      tipo: item.tipo,
+      precoMoedas: item.precoMoedas,
+      valor: item.valor,
+      imagemUrl: item.imagemUrl,
+      previewImagemUrl: item.previewImagemUrl,
+      ativo: item.ativo,
+      disponivelNaLoja: true,
+      adquirido: true,
+    })),
+  },
+});
+
 describe('PersonalizarPerfilPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -126,6 +180,7 @@ describe('PersonalizarPerfilPage', () => {
       },
     };
     mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce(catalogoDe(ITEM_CORUJA, ITEM_CEREBRO) as AxiosResponse);
 
     renderWithProviders(<PersonalizarPerfilPage />);
 
@@ -146,6 +201,7 @@ describe('PersonalizarPerfilPage', () => {
       },
     };
     mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce(catalogoDe(ITEM_CORUJA, ITEM_CEREBRO) as AxiosResponse);
 
     renderWithProviders(<PersonalizarPerfilPage />);
 
@@ -167,7 +223,8 @@ describe('PersonalizarPerfilPage', () => {
       },
     };
     mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
-    
+    mockedHttpClient.get.mockResolvedValueOnce(catalogoDe(ITEM_CORUJA, ITEM_CEREBRO) as AxiosResponse);
+
     const mockPatchResponse: Partial<AxiosResponse> = { status: 200 };
     mockedHttpClient.patch.mockResolvedValueOnce(mockPatchResponse as AxiosResponse);
 
@@ -192,6 +249,7 @@ describe('PersonalizarPerfilPage', () => {
       },
     };
     mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce(catalogoDe(ITEM_CORUJA, ITEM_CEREBRO) as AxiosResponse);
     mockedHttpClient.patch.mockResolvedValueOnce({ status: 200 } as AxiosResponse);
 
     renderWithProviders(<PersonalizarPerfilPage />);
@@ -210,12 +268,73 @@ describe('PersonalizarPerfilPage', () => {
     expect(mockSetCosmeticosGlobais).toHaveBeenCalled();
   });
 
+  it('deve mostrar a aba Aparência com os grupos de Rosto e Cabelo', async () => {
+    const mockResponse: Partial<AxiosResponse> = { data: { dados: [ITEM_ROSTO] } };
+    mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce(
+      catalogoDe(ITEM_ROSTO, ITEM_CABELO_BLOQUEADO) as AxiosResponse,
+    );
+
+    renderWithProviders(<PersonalizarPerfilPage />);
+    await waitFor(() => expect(screen.getByText('Aparência')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('Aparência'));
+
+    expect(await screen.findByText('Rosto')).toBeInTheDocument();
+    expect(screen.getByText('Cabelo')).toBeInTheDocument();
+  });
+
+  it('deve bloquear item nao adquirido e navegar para a loja em vez de equipar', async () => {
+    const mockResponse: Partial<AxiosResponse> = { data: { dados: [ITEM_ROSTO] } };
+    mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce(
+      catalogoDe(ITEM_ROSTO, ITEM_CABELO_BLOQUEADO) as AxiosResponse,
+    );
+
+    renderWithProviders(<PersonalizarPerfilPage />);
+    await waitFor(() => expect(screen.getByText('Aparência')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('Aparência'));
+
+    const nomeBloqueado = await screen.findByText(ITEM_CABELO_BLOQUEADO.nome);
+    expect(screen.getByText('Adquira na loja')).toBeInTheDocument();
+
+    fireEvent.click(nomeBloqueado);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/aluno/loja');
+    expect(mockedHttpClient.patch).not.toHaveBeenCalled();
+  });
+
+  it('deve equipar um item de ROSTO possuído ao salvar', async () => {
+    const mockResponse: Partial<AxiosResponse> = { data: { dados: [ITEM_ROSTO] } };
+    mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce(
+      catalogoDe(ITEM_ROSTO, ITEM_CABELO_BLOQUEADO) as AxiosResponse,
+    );
+    mockedHttpClient.patch.mockResolvedValueOnce({ status: 200 } as AxiosResponse);
+
+    renderWithProviders(<PersonalizarPerfilPage />);
+    await waitFor(() => expect(screen.getByText('Aparência')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('Aparência'));
+    fireEvent.click(await screen.findByText(ITEM_ROSTO.nome));
+
+    const saveBtn = await screen.findByRole('button', { name: /Salvar alterações/i });
+    fireEvent.click(saveBtn);
+
+    expect(await screen.findByText('Sucesso!')).toBeInTheDocument();
+    expect(mockedHttpClient.patch).toHaveBeenCalledWith('/inventario/equipar', {
+      itemLojaId: ITEM_ROSTO.id,
+    });
+  });
+
   it('deve navegar para a loja ao clicar em Ver mais na Loja', async () => {
     const mockResponse: Partial<AxiosResponse> = { data: { dados: [] } };
     mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce({ data: { dados: [] } } as AxiosResponse);
 
     renderWithProviders(<PersonalizarPerfilPage />);
-    
+
     const shopBtn = await screen.findAllByText('Ver mais na Loja');
     fireEvent.click(shopBtn[0]);
 

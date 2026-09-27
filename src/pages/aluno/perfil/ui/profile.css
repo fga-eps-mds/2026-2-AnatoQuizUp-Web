@@ -41,7 +41,7 @@
 .avatar-only-heading h2{margin:0;font-size:27px;color:#15171b}
 .avatar-only-heading svg{color:#17264a;margin-right:16px}
 .avatar-only-circle{position:relative;width:100%;aspect-ratio:1;border-radius:50%;background:#e5fbf8;margin:62px 0 30px;overflow:hidden}
-.avatar-only-circle img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.avatar-only-circle>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .avatar-only-shadow{position:absolute;left:15%;top:78%;width:70%;height:12%;border-radius:50%;background:#9db4c040}
 .avatar-only-restore{display:flex;align-items:center;justify-content:center;gap:10px;width:75%;min-height:48px;border:1px solid #ced2dc;border-radius:8px;background:#fafaff;color:#17264a;font-weight:650;cursor:pointer}
 .avatar-only-restore:hover{background:#eff8f7}
@@ -67,3 +67,30 @@
 .profile-customize-link:hover{background:#d7f7f0}
 .profile-activity-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media(max-width:640px){.profile-activity-cards{grid-template-columns:1fr}}
+
+.avatar-cabelo-overlay{position:absolute;transform:translate(-50%,-50%);pointer-events:none}
+.avatar-cabelo-overlay.cabelo-moicano{top:30%;left:50%;width:82%}
+.avatar-cabelo-overlay.cabelo-loiro{top:40%;left:50%;width:100%}
+.avatar-cabelo-overlay.cabelo-cacheado{top:40%;left:46%;width:82%}
+.avatar-personalizar-card{border:1px solid #d2d5dc;border-radius:10px;background:#fff;padding:24px 28px}
+.avatar-tabs{display:flex;gap:10px;border-bottom:1px solid #e0e4e8;margin-bottom:22px}
+.avatar-tabs button{border:0;background:transparent;padding:10px 6px;font-weight:700;color:#7d879d;cursor:pointer;border-bottom:2px solid transparent}
+.avatar-tabs button.active{color:#0d9488;border-bottom-color:#14b8a6}
+.avatar-tabs button:disabled{cursor:not-allowed;opacity:.55}
+.avatar-secao+.avatar-secao{margin-top:26px;padding-top:22px;border-top:1px solid #eef0f3}
+.avatar-secao h3{margin:0 0 14px;font-size:14px;font-weight:700;color:#17264a}
+.avatar-cores{display:flex;flex-wrap:wrap;gap:14px}
+.avatar-cor-swatch{width:40px;height:40px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.avatar-cor-swatch.selecionado{border-color:#17264a;box-shadow:0 0 0 3px #fff,0 0 0 5px #17264a}
+.avatar-cabelo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:14px;max-width:320px}
+.avatar-cabelo-opcao{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border:1px solid #e0e4e8;border-radius:10px;background:#fff;color:#7d879d;cursor:pointer}
+.avatar-cabelo-opcao:hover{border-color:#14b8a6}
+.avatar-cabelo-opcao.selecionado{border-color:#14b8a6;box-shadow:0 0 0 3px rgba(20,184,166,.15)}
+.avatar-em-breve{color:#7d879d;font-size:14px;margin:0}
+.avatar-acoes{display:flex;justify-content:flex-end;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid #eef0f3}
+.avatar-botao-secundario{border:1px solid #d2d5dc;background:#fff;color:#17264a;border-radius:8px;padding:11px 22px;font-weight:650;cursor:pointer}
+.avatar-botao-secundario:disabled{opacity:.5;cursor:not-allowed}
+.avatar-botao-primario{display:inline-flex;align-items:center;gap:8px;border:0;background:#14b8a6;color:#fff;border-radius:8px;padding:11px 22px;font-weight:700;cursor:pointer}
+.avatar-botao-primario:hover{background:#0d9488}
+.avatar-botao-primario:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:640px){.avatar-cores{gap:10px}.avatar-cabelo-grid{max-width:100%}.avatar-acoes{flex-wrap:wrap}}

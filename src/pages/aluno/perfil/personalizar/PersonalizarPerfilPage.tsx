@@ -1,10 +1,10 @@
 // Pagina de personalizacao do perfil do aluno. Mostra o inventario de cosmeticos
-// (icones, molduras, avatares, titulos e fundos) por aba, permite montar uma
-// previa em tempo real e salvar as alteracoes equipando/desequipando cada slot.
+// (icones, molduras, avatares, aparencia, titulos e fundos) por aba, permite montar
+// uma previa em tempo real e salvar as alteracoes equipando/desequipando cada slot.
 // As mudancas ficam "em rascunho" (staged) ate o aluno confirmar o salvamento.
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Ban, Check, Info, Save, ShoppingBag, X } from 'lucide-react';
+import { Ban, Check, Info, Lock, Save, ShoppingBag, X } from 'lucide-react';
 
 import { useAuth } from '../../../../app/providers/AuthProvider';
 import { useEquippedCosmeticsStore } from '../../../../features/profile-cosmetics';
@@ -15,43 +15,266 @@ import {
 } from '../../../../shared/ui/profile-identity-card';
 import {
   buscarInventarioCompleto,
+  listarCatalogo,
   type InventarioItem,
   type ItemInventario,
+  type ItemLoja,
   type TipoItemLoja,
 } from '../../../../features/loja';
 
-// Abas de personalizacao: uma por tipo de cosmetico, com rotulo e explicacao.
-const ABAS: { id: TipoItemLoja; label: string; descricao: string }[] = [
+// Abas de personalizacao. Cada aba agrupa um ou mais tipos de cosmetico (ex.:
+// "Aparência" combina ROSTO + CABELO), com rotulo e explicacao.
+const ABAS: { id: string; tipos: TipoItemLoja[]; label: string; descricao: string }[] = [
   {
     id: 'ICONE_PERFIL',
+    tipos: ['ICONE_PERFIL'],
     label: 'Ícones',
     descricao: 'Selecione um ícone que você já tem — ele aparece no seu avatar.',
   },
   {
     id: 'MOLDURA',
+    tipos: ['MOLDURA'],
     label: 'Molduras',
     descricao: 'A moldura é aplicada ao redor do seu ícone de perfil.',
   },
   {
     id: 'AVATAR',
+    tipos: ['AVATAR'],
     label: 'Avatares',
     descricao: 'Personagem ilustrado exibido na sua página de perfil.',
   },
   {
+    id: 'APARENCIA',
+    tipos: ['ROSTO', 'CABELO'],
+    label: 'Aparência',
+    descricao: 'Combine rosto e cabelo para montar sua aparência.',
+  },
+  {
     id: 'TITULO',
+    tipos: ['TITULO'],
     label: 'Títulos',
     descricao: 'O título escolhido aparece abaixo do seu nome.',
   },
   {
     id: 'PLANO_FUNDO',
+    tipos: ['PLANO_FUNDO'],
     label: 'Fundos',
     descricao: 'Aplicado ao topo da sua página de perfil.',
   },
 ];
 
+const LABEL_TIPO: Partial<Record<TipoItemLoja, string>> = {
+  ROSTO: 'Rosto',
+  CABELO: 'Cabelo',
+};
+
+/** Previa visual de um item ja possuido, especifica por tipo de cosmetico. */
+const PreviaItem = ({ tipo, item }: { tipo: TipoItemLoja; item: ItemInventario }) => {
+  if (tipo === 'PLANO_FUNDO') {
+    return (
+      <div
+        className="h-20 w-20 rounded-2xl border border-black/5 shadow-inner"
+        style={{ background: item.valor || '#e5e7eb' }}
+      />
+    );
+  }
+
+  if (tipo === 'TITULO') {
+    return (
+      <div className="flex h-16 w-full items-center justify-center rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-orange-500/10 px-2 text-center">
+        <span className="text-xs font-black text-[#B45309] uppercase tracking-wide">
+          {item.nome}
+        </span>
+      </div>
+    );
+  }
+
+  if (tipo === 'MOLDURA') {
+    return (
+      <div
+        className="flex h-20 w-20 items-center justify-center rounded-full p-[5px] shadow-sm"
+        style={{ background: item.valor || '#e5e7eb' }}
+      >
+        <div className="h-full w-full rounded-full bg-gray-100" />
+      </div>
+    );
+  }
+
+  if (tipo === 'ICONE_PERFIL') {
+    return (
+      <div
+        className="flex h-20 w-20 items-center justify-center rounded-2xl p-4 shadow-inner"
+        style={{ background: item.valor || '#0A1128' }}
+      >
+        {item.previewImagemUrl || item.imagemUrl ? (
+          <img
+            src={item.previewImagemUrl || item.imagemUrl || undefined}
+            alt={item.nome}
+            className="h-full w-full object-contain drop-shadow-sm"
+          />
+        ) : (
+          <span className="text-3xl font-black text-white uppercase">{item.nome.charAt(0)}</span>
+        )}
+      </div>
+    );
+  }
+
+  // AVATAR, ROSTO e CABELO: imagem completa (mesmo formato de miniatura).
+  return (
+    <img
+      src={item.previewImagemUrl || item.imagemUrl || undefined}
+      alt={item.nome}
+      className="h-20 w-20 rounded-2xl border border-gray-200 bg-white object-contain p-1 shadow-sm"
+    />
+  );
+};
+
+type GradeDoTipoProps = {
+  tipo: TipoItemLoja;
+  itensCatalogo: ItemLoja[];
+  inventario: InventarioItem[];
+  stagedCosmetics: SlotsCosmeticos;
+  onSelecionar: (item: ItemInventario) => void;
+  onRemover: (tipo: TipoItemLoja) => void;
+  onIrParaLoja: () => void;
+};
+
 /**
- * Componente de pagina da personalizacao de perfil. Carrega o inventario,
- * mantem a selecao em rascunho (staged) e sincroniza com a store global ao salvar.
+ * Grade de itens de um tipo de cosmetico: opcao "Nenhum (padrao)", itens
+ * possuidos (selecionaveis) e itens do catalogo ainda nao adquiridos
+ * (bloqueados, com indicacao para ir a loja).
+ */
+const GradeDoTipo = ({
+  tipo,
+  itensCatalogo,
+  inventario,
+  stagedCosmetics,
+  onSelecionar,
+  onRemover,
+  onIrParaLoja,
+}: GradeDoTipoProps) => {
+  const itensDoTipo = itensCatalogo.filter((item) => item.tipo === tipo);
+
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      {/* Opcao "Nenhum (padrao)": desequipa o slot deste tipo. */}
+      <button
+        type="button"
+        onClick={() => onRemover(tipo)}
+        className={`relative flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 bg-white p-4 transition-all ${
+          !stagedCosmetics[tipo]
+            ? 'border-[#14b8a6] bg-teal-50/30 shadow-[0_0_0_4px_rgba(20,184,166,0.15)]'
+            : 'border-gray-100 hover:border-[#14b8a6] hover:shadow-md'
+        }`}
+      >
+        {!stagedCosmetics[tipo] && (
+          <div className="absolute right-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#14b8a6] text-white">
+            <Check size={14} strokeWidth={3} />
+          </div>
+        )}
+        <div className="flex h-24 w-full items-center justify-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 text-gray-400">
+            <Ban size={28} />
+          </div>
+        </div>
+        <div className="flex flex-col items-center">
+          <span className="text-center text-sm font-black leading-tight text-[#00214d]">
+            Nenhum (padrão)
+          </span>
+          {!stagedCosmetics[tipo] && (
+            <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-teal-600">
+              Em uso
+            </span>
+          )}
+        </div>
+      </button>
+
+      {itensDoTipo.map((itemCatalogo) => {
+        const registroInventario = inventario.find(
+          (registro) => registro.item.id === itemCatalogo.id,
+        );
+
+        if (!registroInventario) {
+          return (
+            <button
+              key={itemCatalogo.id}
+              type="button"
+              onClick={onIrParaLoja}
+              className="relative flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-4 opacity-70 transition-all hover:border-[#F97316]"
+            >
+              <div className="flex h-24 w-full items-center justify-center">
+                <img
+                  src={itemCatalogo.previewImagemUrl || itemCatalogo.imagemUrl || undefined}
+                  alt={itemCatalogo.nome}
+                  className="h-20 w-20 rounded-2xl object-contain grayscale"
+                />
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-center text-sm font-black leading-tight text-gray-400">
+                  {itemCatalogo.nome}
+                </span>
+                <span className="mt-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#F97316]">
+                  <Lock size={12} /> Adquira na loja
+                </span>
+              </div>
+            </button>
+          );
+        }
+
+        const item = registroInventario.item;
+        const estaEquipado = stagedCosmetics[tipo]?.id === item.id;
+
+        return (
+          <button
+            key={registroInventario.id}
+            onClick={() => onSelecionar(item)}
+            className={`relative flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 bg-white p-4 transition-all ${
+              estaEquipado
+                ? 'border-[#14b8a6] bg-teal-50/30 shadow-[0_0_0_4px_rgba(20,184,166,0.15)]'
+                : 'border-gray-100 hover:border-[#14b8a6] hover:shadow-md'
+            }`}
+          >
+            {estaEquipado && (
+              <div className="absolute right-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#14b8a6] text-white">
+                <Check size={14} strokeWidth={3} />
+              </div>
+            )}
+
+            <div className="flex h-24 w-full items-center justify-center">
+              <PreviaItem tipo={tipo} item={item} />
+            </div>
+
+            <div className="flex flex-col items-center">
+              <span className="text-sm font-black text-[#00214d] text-center leading-tight">
+                {item.nome}
+              </span>
+              {estaEquipado && (
+                <span className="mt-1 text-[10px] font-bold text-teal-600 uppercase tracking-wider">
+                  Equipado
+                </span>
+              )}
+            </div>
+          </button>
+        );
+      })}
+
+      <button
+        onClick={onIrParaLoja}
+        className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 bg-white p-4 text-center transition-all hover:border-[#F97316] hover:bg-orange-50/50"
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-[#F97316]">
+          <ShoppingBag size={20} />
+        </div>
+        <span className="text-sm font-black text-[#F97316]">Ver mais na Loja</span>
+      </button>
+    </div>
+  );
+};
+
+/**
+ * Componente de pagina da personalizacao de perfil. Carrega o inventario e o
+ * catalogo, mantem a selecao em rascunho (staged) e sincroniza com a store
+ * global ao salvar.
  */
 export const PersonalizarPerfilPage = () => {
   const navigate = useNavigate();
@@ -62,8 +285,9 @@ export const PersonalizarPerfilPage = () => {
   const setCosmeticosGlobais = useEquippedCosmeticsStore((state) => state.setCosmeticos);
 
   const [inventario, setInventario] = useState<InventarioItem[]>([]);
+  const [catalogo, setCatalogo] = useState<ItemLoja[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [abaAtiva, setAbaAtiva] = useState<TipoItemLoja>('ICONE_PERFIL');
+  const [abaAtiva, setAbaAtiva] = useState<string>('ICONE_PERFIL');
 
   // Selecao em rascunho (ainda nao persistida) e flags de salvamento/sucesso.
   const [stagedCosmetics, setStagedCosmetics] = useState<SlotsCosmeticos>({});
@@ -71,16 +295,20 @@ export const PersonalizarPerfilPage = () => {
 
   const [modalSucesso, setModalSucesso] = useState(false);
 
-  // Carrega o inventario completo ao montar e inicializa tanto a store global
+  // Carrega inventario e catalogo ao montar e inicializa tanto a store global
   // quanto o rascunho com os itens atualmente equipados.
   useEffect(() => {
     let ativo = true;
-    const fetchInventario = async () => {
+    const fetchDados = async () => {
       try {
-        const itensDoBackend = await buscarInventarioCompleto();
+        const [itensDoBackend, catalogoResp] = await Promise.all([
+          buscarInventarioCompleto(),
+          listarCatalogo({ limit: 100 }),
+        ]);
 
         if (ativo) {
           setInventario(itensDoBackend);
+          setCatalogo(catalogoResp.dados);
 
           const equipadosReais: SlotsCosmeticos = {};
 
@@ -100,7 +328,7 @@ export const PersonalizarPerfilPage = () => {
       }
     };
 
-    void fetchInventario();
+    void fetchDados();
     return () => {
       ativo = false;
     };
@@ -113,9 +341,8 @@ export const PersonalizarPerfilPage = () => {
 
   if (!user) return null;
 
-  // Itens do inventario pertencentes a aba ativa e os metadados dessa aba.
-  const itensDaAbaAtual = inventario.filter((registro) => registro.item.tipo === abaAtiva);
   const abaInfo = ABAS.find((a) => a.id === abaAtiva)!;
+  const irParaLoja = () => navigate('/aluno/loja');
 
   /**
    * Seleciona um cosmetico para o slot do seu tipo. Avatar e icone de perfil
@@ -157,6 +384,8 @@ export const PersonalizarPerfilPage = () => {
         'ICONE_PERFIL',
         'MOLDURA',
         'AVATAR',
+        'ROSTO',
+        'CABELO',
         'TITULO',
         'PLANO_FUNDO',
       ];
@@ -236,10 +465,7 @@ export const PersonalizarPerfilPage = () => {
               </div>
               <p className="text-center text-xs font-medium text-gray-400">
                 Aqui aparecem só os itens que <b>você já tem</b>. Faltou algum? Vá à{' '}
-                <button
-                  onClick={() => navigate('/aluno/loja')}
-                  className="font-bold text-[#14b8a6] hover:underline"
-                >
+                <button onClick={irParaLoja} className="font-bold text-[#14b8a6] hover:underline">
                   Loja
                 </button>
                 .
@@ -247,12 +473,12 @@ export const PersonalizarPerfilPage = () => {
             </div>
 
             <div className="flex min-w-0 flex-col gap-6">
-              {/* Seletor de abas por tipo de cosmetico, com a contagem de itens possuidos. */}
+              {/* Seletor de abas, com a contagem de itens possuidos. */}
               <div className="flex flex-wrap gap-2">
                 {ABAS.map((aba) => {
                   const isActive = aba.id === abaAtiva;
-                  const count = inventario.filter(
-                    (registro) => registro.item.tipo === aba.id,
+                  const count = inventario.filter((registro) =>
+                    aba.tipos.includes(registro.item.tipo),
                   ).length;
                   return (
                     <button
@@ -281,144 +507,33 @@ export const PersonalizarPerfilPage = () => {
                   <p className="text-sm font-semibold text-gray-500">{abaInfo.descricao}</p>
                 </div>
                 <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-500">
-                  {itensDaAbaAtual.length} que você tem
+                  {inventario.filter((registro) => abaInfo.tipos.includes(registro.item.tipo)).length}{' '}
+                  que você tem
                 </span>
               </div>
 
               {carregando ? (
                 <div className="h-32 animate-pulse rounded-xl bg-gray-200" />
               ) : (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                  {/* Opcao "Nenhum (padrao)": desequipa o slot da aba atual. */}
-                  <button
-                    type="button"
-                    onClick={() => removerCosmetico(abaAtiva)}
-                    className={`relative flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 bg-white p-4 transition-all ${
-                      !stagedCosmetics[abaAtiva]
-                        ? 'border-[#14b8a6] bg-teal-50/30 shadow-[0_0_0_4px_rgba(20,184,166,0.15)]'
-                        : 'border-gray-100 hover:border-[#14b8a6] hover:shadow-md'
-                    }`}
-                  >
-                    {!stagedCosmetics[abaAtiva] && (
-                      <div className="absolute right-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#14b8a6] text-white">
-                        <Check size={14} strokeWidth={3} />
-                      </div>
-                    )}
-                    <div className="flex h-24 w-full items-center justify-center">
-                      <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 text-gray-400">
-                        <Ban size={28} />
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className="text-center text-sm font-black leading-tight text-[#00214d]">
-                        Nenhum (padrão)
-                      </span>
-                      {!stagedCosmetics[abaAtiva] && (
-                        <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-teal-600">
-                          Em uso
-                        </span>
+                <div className="flex flex-col gap-6">
+                  {abaInfo.tipos.map((tipo) => (
+                    <div key={tipo} className="flex flex-col gap-3">
+                      {abaInfo.tipos.length > 1 && (
+                        <h3 className="text-sm font-black uppercase tracking-wide text-gray-400">
+                          {LABEL_TIPO[tipo] ?? tipo}
+                        </h3>
                       )}
+                      <GradeDoTipo
+                        tipo={tipo}
+                        itensCatalogo={catalogo}
+                        inventario={inventario}
+                        stagedCosmetics={stagedCosmetics}
+                        onSelecionar={handleSelectCosmetic}
+                        onRemover={removerCosmetico}
+                        onIrParaLoja={irParaLoja}
+                      />
                     </div>
-                  </button>
-
-                  {/* Itens possuidos na aba: cada tipo tem uma previa visual propria. */}
-                  {itensDaAbaAtual.map((registro) => {
-                    const item = registro.item;
-                    const estaEquipado = stagedCosmetics[abaAtiva]?.id === item.id;
-
-                    return (
-                      <button
-                        key={registro.id}
-                        onClick={() => handleSelectCosmetic(item)}
-                        className={`relative flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 bg-white p-4 transition-all ${
-                          estaEquipado
-                            ? 'border-[#14b8a6] bg-teal-50/30 shadow-[0_0_0_4px_rgba(20,184,166,0.15)]'
-                            : 'border-gray-100 hover:border-[#14b8a6] hover:shadow-md'
-                        }`}
-                      >
-                        {estaEquipado && (
-                          <div className="absolute right-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#14b8a6] text-white">
-                            <Check size={14} strokeWidth={3} />
-                          </div>
-                        )}
-
-                        <div className="flex h-24 w-full items-center justify-center">
-                          {abaAtiva === 'PLANO_FUNDO' && (
-                            <div
-                              className="h-20 w-20 rounded-2xl border border-black/5 shadow-inner"
-                              style={{ background: item.valor || '#e5e7eb' }}
-                            />
-                          )}
-
-                          {abaAtiva === 'TITULO' && (
-                            <div className="flex h-16 w-full items-center justify-center rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-orange-500/10 px-2 text-center">
-                              <span className="text-xs font-black text-[#B45309] uppercase tracking-wide">
-                                {item.nome}
-                              </span>
-                            </div>
-                          )}
-
-                          {abaAtiva === 'MOLDURA' && (
-                            <div
-                              className="flex h-20 w-20 items-center justify-center rounded-full p-[5px] shadow-sm"
-                              style={{ background: item.valor || '#e5e7eb' }}
-                            >
-                              <div className="h-full w-full rounded-full bg-gray-100" />
-                            </div>
-                          )}
-
-                          {abaAtiva === 'ICONE_PERFIL' && (
-                            <div
-                              className="flex h-20 w-20 items-center justify-center rounded-2xl p-4 shadow-inner"
-                              style={{ background: item.valor || '#0A1128' }}
-                            >
-                              {item.previewImagemUrl || item.imagemUrl ? (
-                                /* Correção de build: fallback com undefined */
-                                <img
-                                  src={item.previewImagemUrl || item.imagemUrl || undefined}
-                                  alt={item.nome}
-                                  className="h-full w-full object-contain drop-shadow-sm"
-                                />
-                              ) : (
-                                <span className="text-3xl font-black text-white uppercase">
-                                  {item.nome.charAt(0)}
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          {abaAtiva === 'AVATAR' && (
-                            <img
-                              src={item.previewImagemUrl || item.imagemUrl || undefined}
-                              alt={item.nome}
-                              className="h-20 w-20 rounded-2xl border border-gray-200 bg-white object-contain p-1 shadow-sm"
-                            />
-                          )}
-                        </div>
-
-                        <div className="flex flex-col items-center">
-                          <span className="text-sm font-black text-[#00214d] text-center leading-tight">
-                            {item.nome}
-                          </span>
-                          {estaEquipado && (
-                            <span className="mt-1 text-[10px] font-bold text-teal-600 uppercase tracking-wider">
-                              Equipado
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-
-                  <button
-                    onClick={() => navigate('/aluno/loja')}
-                    className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 bg-white p-4 text-center transition-all hover:border-[#F97316] hover:bg-orange-50/50"
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-[#F97316]">
-                      <ShoppingBag size={20} />
-                    </div>
-                    <span className="text-sm font-black text-[#F97316]">Ver mais na Loja</span>
-                  </button>
+                  ))}
                 </div>
               )}
 

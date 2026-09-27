@@ -8,6 +8,8 @@ export type TipoItemLoja =
   | 'AVATAR'
   | 'TITULO'
   | 'PLANO_FUNDO'
+  | 'ROSTO'
+  | 'CABELO'
   | 'DICA'
   | 'POTENCIALIZADOR';
 export type OrigemItemInventario = 'COMPRA' | 'CONQUISTA';

@@ -60,7 +60,8 @@ type CirculoProps = AvatarCosmeticoProps;
 
 /**
  * Renderiza o circulo do avatar resolvendo a prioridade dos cosmeticos:
- * avatar (imagem) > icone de perfil (com caso especial da logo premium) > iniciais.
+ * avatar (imagem) > icone de perfil (com caso especial da logo premium) >
+ * aparencia (rosto/cabelo) > iniciais.
  * Aplica a moldura equipada por cima, quando houver.
  */
 const Circulo = ({ identidade, cosmeticos, tamanho }: CirculoProps) => {
@@ -105,7 +106,33 @@ const Circulo = ({ identidade, cosmeticos, tamanho }: CirculoProps) => {
         )}
       </div>
     );
-  // Prioridade 3 (fallback): iniciais do nome sobre gradiente padrao.
+  // Prioridade 3: personalizacao de aparencia (rosto/cabelo), quando nao ha
+  // avatar nem icone equipado.
+  } else if (cosmeticos.ROSTO || cosmeticos.CABELO) {
+    const rosto = cosmeticos.ROSTO;
+    const cabelo = cosmeticos.CABELO;
+    const rostoSrc = rosto?.previewImagemUrl ?? rosto?.imagemUrl;
+    const cabeloSrc = cabelo?.previewImagemUrl ?? cabelo?.imagemUrl;
+
+    conteudo = (
+      <div className={`relative ${dimensao} overflow-hidden rounded-full bg-gray-100`}>
+        {rostoSrc && (
+          <img
+            src={rostoSrc}
+            alt={rosto!.nome}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+        {cabeloSrc && (
+          <img
+            src={cabeloSrc}
+            alt={cabelo!.nome}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
+      </div>
+    );
+  // Prioridade 4 (fallback): iniciais do nome sobre gradiente padrao.
   } else {
     conteudo = (
       <div
