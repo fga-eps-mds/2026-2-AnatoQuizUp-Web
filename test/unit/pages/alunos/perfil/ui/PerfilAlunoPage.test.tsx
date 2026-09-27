@@ -66,7 +66,7 @@ test('opens the avatar page from Meu avatar and returns to profile', async () =>
   await user.click(screen.getAllByRole('link', { name: 'Meu avatar' })[0]);
   expect(screen.getByRole('heading', { name: 'Seu avatar' })).toBeInTheDocument();
   expect(screen.getByRole('img', { name: 'Cérebro do AnatoQuizUp' })).toBeInTheDocument();
-  expect(screen.queryByText('Acessórios')).not.toBeInTheDocument();
+  expect(screen.queryByText('Dados pessoais')).not.toBeInTheDocument();
   await user.click(screen.getByRole('link', { name: 'Perfil' }));
   expect(screen.getByRole('heading', { name: 'Olá, Leticia' })).toBeInTheDocument();
 });
