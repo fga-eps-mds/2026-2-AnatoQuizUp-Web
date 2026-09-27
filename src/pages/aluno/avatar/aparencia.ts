@@ -5,13 +5,20 @@
 
 export type CorCerebro = 'rosa' | 'roxo' | 'azul' | 'verde' | 'laranja' | 'amarelo';
 export type EstiloCabelo = 'loiro' | 'cacheado' | 'moicano';
+// Acessorios liberados como base (issue #34); os demais itens da loja entram depois.
+export type EstiloAcessorio = 'coroa' | 'oculos' | 'chapeu-formatura';
 
 export type AparenciaAvatar = {
   corCerebro: CorCerebro;
   cabelo: EstiloCabelo | null;
+  acessorio: EstiloAcessorio | null;
 };
 
-export const APARENCIA_PADRAO: AparenciaAvatar = { corCerebro: 'rosa', cabelo: null };
+export const APARENCIA_PADRAO: AparenciaAvatar = {
+  corCerebro: 'rosa',
+  cabelo: null,
+  acessorio: null,
+};
 
 // ponytail: recolore a arte base (rosa) girando o matiz via CSS filter, em vez de
 // exigir uma ilustracao por cor. Graus aproximados; se alguma cor destoar muito,

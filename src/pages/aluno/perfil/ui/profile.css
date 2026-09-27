@@ -69,9 +69,23 @@
 @media(max-width:640px){.profile-activity-cards{grid-template-columns:1fr}}
 
 .avatar-cabelo-overlay{position:absolute;transform:translate(-50%,-50%);pointer-events:none}
-.avatar-cabelo-overlay.cabelo-moicano{top:30%;left:50%;width:82%}
-.avatar-cabelo-overlay.cabelo-loiro{top:40%;left:50%;width:100%}
-.avatar-cabelo-overlay.cabelo-cacheado{top:40%;left:46%;width:82%}
+/* Camadas: oculos atras do cabelo, cabelo no meio, chapeu/coroa por cima do cabelo. */
+.avatar-cabelo-overlay.cabelo-moicano{top:30%;left:50%;width:82%;z-index:2}
+.avatar-cabelo-overlay.cabelo-loiro{top:40%;left:50%;width:100%;z-index:2}
+.avatar-cabelo-overlay.cabelo-cacheado{top:40%;left:46%;width:82%;z-index:2}
+.avatar-cabelo-overlay.acessorio-coroa{top:17%;left:50%;width:18%;z-index:3}
+.avatar-cabelo-overlay.acessorio-oculos{top:46%;left:50%;width:50%;z-index:1}
+.avatar-cabelo-overlay.acessorio-chapeu-formatura{top:20.5%;left:50%;width:25.5%;z-index:3}
+/* Com cabelo equipado, a coroa/chapeu sobem para descansar em cima do volume do cabelo.
+   8.5%/10% e o minimo para a metade do acessorio nao passar do topo do circulo (que tem
+   overflow:hidden) - acima disso a ponta da coroa/chapeu e cortada. Os 3 penteados tem
+   volume suficiente para nao deixar vao visivel nessa altura, entao usam o mesmo valor. */
+.avatar-cabelo-overlay.acessorio-coroa.com-cabelo-loiro,
+.avatar-cabelo-overlay.acessorio-coroa.com-cabelo-cacheado,
+.avatar-cabelo-overlay.acessorio-coroa.com-cabelo-moicano{top:8.5%}
+.avatar-cabelo-overlay.acessorio-chapeu-formatura.com-cabelo-loiro,
+.avatar-cabelo-overlay.acessorio-chapeu-formatura.com-cabelo-cacheado,
+.avatar-cabelo-overlay.acessorio-chapeu-formatura.com-cabelo-moicano{top:10%}
 .avatar-personalizar-card{border:1px solid #d2d5dc;border-radius:10px;background:#fff;padding:24px 28px}
 .avatar-tabs{display:flex;gap:10px;border-bottom:1px solid #e0e4e8;margin-bottom:22px}
 .avatar-tabs button{border:0;background:transparent;padding:10px 6px;font-weight:700;color:#7d879d;cursor:pointer;border-bottom:2px solid transparent}
