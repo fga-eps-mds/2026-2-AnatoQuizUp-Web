@@ -86,6 +86,21 @@ export type CompraItemResponse = {
   item: InventarioItem;
 };
 
+export type UsoItemResponse = {
+  mensagem: string;
+  quantidadeRestante: number;
+  uso: {
+    id: string;
+    itemLojaId: string;
+    itemNome: string;
+    efeito: string;
+    status: 'ATIVO' | 'APLICADO';
+    ativadoEm: string;
+    aplicadoEm: string | null;
+    questaoId: string | null;
+  };
+};
+
 // Parametros para listar o catalogo (filtro por tipo e paginacao).
 export type ListarCatalogoParams = {
   tipo?: TipoItemLoja;

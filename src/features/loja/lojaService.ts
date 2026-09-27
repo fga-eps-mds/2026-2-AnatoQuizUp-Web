@@ -10,6 +10,7 @@ import type {
   ListarCatalogoParams,
   RespostaInventarioCompleto,
   RespostaPaginada,
+  UsoItemResponse,
 } from "./types";
 import { normalizarInventarioPlano } from "./types";
 
@@ -88,14 +89,9 @@ export const comprarItem = async (
 // POST /loja/usar — ativa uma unidade de potencializador do inventario.
 export const usarItem = async (
   itemLojaId: string,
-): Promise<{
-  mensagem: string;
-  quantidadeRestante: number;
-}> => {
+): Promise<UsoItemResponse> => {
   try {
-    const { data } = await httpClient.post(`${LOJA_ENDPOINT}/usar`, {
-      itemLojaId,
-    });
+    const { data } = await httpClient.post<UsoItemResponse>(`${LOJA_ENDPOINT}/usar`, { itemLojaId });
     return data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));

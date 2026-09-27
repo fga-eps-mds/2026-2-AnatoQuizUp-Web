@@ -14,5 +14,6 @@ export type {
   RespostaPaginada,
   TipoItemLoja,
   OrigemItemInventario,
+  UsoItemResponse,
 } from "./types";
 export { normalizarInventarioPlano } from "./types";

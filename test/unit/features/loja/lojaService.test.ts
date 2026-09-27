@@ -4,6 +4,7 @@ import {
   comprarItem,
   listarCatalogo,
   listarInventario,
+  usarItem,
 } from '../../../../src/features/loja/lojaService';
 
 jest.mock('../../../../src/shared/api/httpClient', () => ({
@@ -105,6 +106,25 @@ describe('lojaService', () => {
       itemLojaId: 'dica-1',
       quantidade: 3,
     });
+  });
+
+  it('deve usar item na rota existente e preservar o registro retornado pelo backend', async () => {
+    const uso = {
+      id: 'uso-1',
+      itemLojaId: 'cafe-1',
+      itemNome: 'Cafe do Foco',
+      efeito: 'Dobra o proximo acerto.',
+      status: 'ATIVO',
+      ativadoEm: '2026-09-27T10:00:00.000Z',
+      aplicadoEm: null,
+      questaoId: null,
+    };
+    const resposta = { mensagem: 'Ativado.', quantidadeRestante: 2, uso };
+    (httpClient.post as jest.Mock).mockResolvedValue({ data: resposta });
+
+    await expect(usarItem('cafe-1')).resolves.toEqual(resposta);
+
+    expect(httpClient.post).toHaveBeenCalledWith('/loja/usar', { itemLojaId: 'cafe-1' });
   });
 
   it('deve lançar erro tratado quando a requisição falhar', async () => {
