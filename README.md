@@ -29,8 +29,8 @@ Frontend do projeto **AnatoQuizUp** — SPA em React + Vite + Tailwind. Consome 
 ### 1. Clonar e entrar no repo
 
 ```powershell
-git clone https://github.com/fga-eps-mds/2026-1-AnatoQuizUp-Web.git
-cd 2026-1-AnatoQuizUp-Web
+git clone https://github.com/fga-eps-mds/2026-2-AnatoQuizUp-Web.git
+cd 2026-2-AnatoQuizUp-Web
 ```
 
 ### 2. Criar e preencher o `.env`
@@ -61,10 +61,10 @@ Para rodar a aplicação fim-a-fim, você precisa de **quatro processos** em qua
 
 | Terminal | Repo | Porta | Comando |
 |---|---|---|---|
-| 1 | `2026-1-AnatoQuizUp-Usuario-Service` | 3333 | `npm run dev` (com Postgres `:5432` no Docker) |
-| 2 | `2026-1-AnatoQuizUp-Quiz-Service` | 3334 | `npm run dev` (com Postgres `:5433` + MinIO no Docker) |
-| 3 | `2026-1-AnatoQuizUp-BFF` | 4000 | `npm run dev` |
-| 4 | `2026-1-AnatoQuizUp-Web` (este) | 5173 | `npm run dev` |
+| 1 | `2026-2-AnatoQuizUp-Usuario-Service` | 3333 | `npm run dev` (com Postgres `:5432` no Docker) |
+| 2 | `2026-2-AnatoQuizUp-Quiz-Service` | 3334 | `npm run dev` (com Postgres `:5433` + MinIO no Docker) |
+| 3 | `2026-2-AnatoQuizUp-BFF` | 4000 | `npm run dev` |
+| 4 | `2026-2-AnatoQuizUp-Web` (este) | 5173 | `npm run dev` |
 
 > Para passo-a-passo completo (envs, docker, smoke tests, troubleshooting), veja `2026-1-AnatoQuizUp-Doc/docs/contribuicao/setup-local.md`.
 
