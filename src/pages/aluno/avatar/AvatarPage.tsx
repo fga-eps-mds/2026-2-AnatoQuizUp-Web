@@ -29,6 +29,7 @@ function carregarAparencia(userId: string): AparenciaAvatar {
 export function AvatarPage() {
   const { user } = useAuth();
   const [message, setMessage] = useState('');
+  const [isPersonalizando, setIsPersonalizando] = useState(false);
   const [salvo, setSalvo] = useState<AparenciaAvatar>(APARENCIA_PADRAO);
   const [rascunho, setRascunho] = useState<AparenciaAvatar>(APARENCIA_PADRAO);
 
@@ -59,10 +60,12 @@ export function AvatarPage() {
     localStorage.setItem(chaveAvatar(user.id), JSON.stringify(rascunho));
     setSalvo(rascunho);
     setMessage('Alterações salvas.');
+    setIsPersonalizando(false);
   };
 
   const cancelarAparencia = () => {
     setRascunho(salvo);
+    setIsPersonalizando(false);
   };
 
   return (
@@ -80,12 +83,20 @@ export function AvatarPage() {
         <h2>Personalize seu avatar</h2>
         <p>Escolha os detalhes que combinam com você</p>
       </div>
-      <div className="profile-layout">
+      <div className={`profile-layout${isPersonalizando ? '' : ' avatar-layout-closed'}`}>
         <div className="profile-left">
           <section className="avatar-only-card" aria-labelledby="avatar-title">
             <div className="avatar-only-heading">
               <h2 id="avatar-title">Seu avatar</h2>
-              <Pencil size={20} aria-hidden="true" />
+              <button
+                type="button"
+                className="avatar-only-edit"
+                aria-label="Editar aparência do avatar"
+                aria-expanded={isPersonalizando}
+                onClick={() => setIsPersonalizando(true)}
+              >
+                <Pencil size={20} aria-hidden="true" />
+              </button>
             </div>
             <div className="avatar-only-circle">
               <div className="avatar-only-shadow" />
@@ -116,15 +127,17 @@ export function AvatarPage() {
             <p className="avatar-only-status" role="status">{message}</p>
           </section>
         </div>
-        <div className="profile-right">
-          <AparenciaPanel
-            valor={rascunho}
-            aoMudar={setRascunho}
-            aoSalvar={salvarAparencia}
-            aoCancelar={cancelarAparencia}
-            temAlteracoes={temAlteracoes}
-          />
-        </div>
+        {isPersonalizando && (
+          <div className="profile-right">
+            <AparenciaPanel
+              valor={rascunho}
+              aoMudar={setRascunho}
+              aoSalvar={salvarAparencia}
+              aoCancelar={cancelarAparencia}
+              temAlteracoes={temAlteracoes}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
