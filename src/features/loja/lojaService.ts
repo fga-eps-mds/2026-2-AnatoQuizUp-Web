@@ -6,10 +6,12 @@ import { extractErrorMessage } from "../manage-questions/model/questionService";
 import type {
   CompraItemResponse,
   InventarioItem,
+  HistoricoLojaItem,
   ItemLoja,
   ListarCatalogoParams,
   RespostaInventarioCompleto,
   RespostaPaginada,
+  UsoItemResponse,
 } from "./types";
 import { normalizarInventarioPlano } from "./types";
 
@@ -45,6 +47,22 @@ export const listarInventario = async (params?: {
       { params },
     );
 
+    return data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+// GET /loja/meu-historico — cronologia de compras e utilizacoes do aluno.
+export const listarHistorico = async (params?: {
+  page?: number;
+  limit?: number;
+}): Promise<RespostaPaginada<HistoricoLojaItem>> => {
+  try {
+    const { data } = await httpClient.get<RespostaPaginada<HistoricoLojaItem>>(
+      `${LOJA_ENDPOINT}/meu-historico`,
+      { params },
+    );
     return data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
@@ -88,14 +106,9 @@ export const comprarItem = async (
 // POST /loja/usar — ativa uma unidade de potencializador do inventario.
 export const usarItem = async (
   itemLojaId: string,
-): Promise<{
-  mensagem: string;
-  quantidadeRestante: number;
-}> => {
+): Promise<UsoItemResponse> => {
   try {
-    const { data } = await httpClient.post(`${LOJA_ENDPOINT}/usar`, {
-      itemLojaId,
-    });
+    const { data } = await httpClient.post<UsoItemResponse>(`${LOJA_ENDPOINT}/usar`, { itemLojaId });
     return data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));

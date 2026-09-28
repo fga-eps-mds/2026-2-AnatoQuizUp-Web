@@ -13,6 +13,7 @@ import {
   Check,
   Coins,
   Frame,
+  History,
   LayoutGrid,
   Lock,
   Palette,
@@ -29,10 +30,12 @@ import {
   comprarItem,
   listarCatalogo,
   listarInventario,
+  listarHistorico,
   usarItem,
 } from "../../../../features/loja";
 import type {
   InventarioItem,
+  HistoricoLojaItem,
   ItemLoja,
   TipoItemLoja,
 } from "../../../../features/loja";
@@ -45,7 +48,7 @@ import { useStudentCoinsStore } from "../../../../features/student-coins/model/u
 import { CosmeticPreview } from "../../../../shared/ui/cosmetics";
 
 // Aba ativa: "Todos", uma categoria especifica de item, ou o inventario do aluno.
-type Aba = "TODOS" | TipoItemLoja | "INVENTARIO";
+type Aba = "TODOS" | TipoItemLoja | "INVENTARIO" | "HISTORICO";
 // Sentido de ordenacao por preco (crescente ou decrescente).
 type Ordenacao = "asc" | "desc";
 
@@ -60,6 +63,7 @@ const CATEGORIAS: { key: Aba; label: string; icon: LucideIcon }[] = [
   { key: "TITULO", label: "Títulos", icon: BadgeCheck },
   { key: "PLANO_FUNDO", label: "Fundos", icon: Palette },
   { key: "INVENTARIO", label: "Meu Inventário", icon: Backpack },
+  { key: "HISTORICO", label: "Histórico", icon: History },
 ];
 
 // Mensagem de erro exibida no banner quando a compra falha por outro motivo
@@ -95,6 +99,7 @@ export const LojaPage = () => {
   // Catalogo e inventario carregados, com seus estados de carga/erro.
   const [itens, setItens] = useState<ItemLoja[]>([]);
   const [inventario, setInventario] = useState<InventarioItem[]>([]);
+  const [historico, setHistorico] = useState<HistoricoLojaItem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   // Filtro de aba, ordenacao por preco e item aberto no modal de confirmacao.
@@ -117,14 +122,16 @@ export const LojaPage = () => {
       setErro(null);
 
       try {
-        const [catalogo, meuInventario] = await Promise.all([
+        const [catalogo, meuInventario, meuHistorico] = await Promise.all([
           listarCatalogo({ limit: 100 }),
           listarInventario({ limit: 100 }),
+          listarHistorico({ limit: 100 }),
         ]);
 
         if (ativo) {
           setItens(catalogo.dados);
           setInventario(meuInventario.dados);
+          setHistorico(meuHistorico.dados);
         }
       } catch (error) {
         if (ativo) {
@@ -148,6 +155,16 @@ export const LojaPage = () => {
 
   // Forca uma nova busca do catalogo/inventario (botao "Tentar novamente").
   const handleTentarNovamente = () => setRecarregar((valor) => valor + 1);
+
+  const atualizarHistorico = async () => {
+    try {
+      const resposta = await listarHistorico({ limit: 100 });
+      setHistorico(resposta.dados);
+    } catch {
+      // A compra/uso ja foi confirmado; uma falha ao atualizar a lista nao deve
+      // ocultar o resultado nem transformar a operacao concluida em erro.
+    }
+  };
 
   // Limpa a mensagem de feedback automaticamente apos alguns segundos.
   useEffect(() => {
@@ -247,6 +264,7 @@ export const LojaPage = () => {
         quantidade,
         saldoMoedas: resposta.saldoMoedas,
       });
+      void atualizarHistorico();
     } catch (error) {
       const mensagem =
         error instanceof Error
@@ -292,6 +310,7 @@ export const LojaPage = () => {
         ),
       );
       setFeedback({ tipo: "sucesso", texto: resposta.mensagem });
+      void atualizarHistorico();
     } catch (error) {
       setFeedback({
         tipo: "erro",
@@ -367,6 +386,8 @@ export const LojaPage = () => {
             const contagem =
               categoria.key === "INVENTARIO"
                 ? inventario.length
+                : categoria.key === "HISTORICO"
+                  ? historico.length
                 : categoria.key === "TODOS"
                   ? itens.length
                   : (contagemPorTipo[categoria.key] ?? 0);
@@ -403,6 +424,7 @@ export const LojaPage = () => {
         {!carregando &&
           !erro &&
           abaAtiva !== "INVENTARIO" &&
+          abaAtiva !== "HISTORICO" &&
           itensVisiveis.length > 0 && (
             <div className="mt-5 flex items-center justify-between">
               <p className="text-sm font-bold text-[#0A1128]/50">
@@ -449,6 +471,8 @@ export const LojaPage = () => {
               usandoId={comprandoId}
               onUsar={(registro) => setItemParaUsar(registro)}
             />
+          ) : abaAtiva === "HISTORICO" ? (
+            <HistoricoLoja historico={historico} />
           ) : (
             <CatalogoGrid
               itens={itensVisiveis}
@@ -586,6 +610,56 @@ const CatalogoGrid = ({
         );
       })}
     </div>
+  );
+};
+
+const HistoricoLoja = ({ historico }: { historico: HistoricoLojaItem[] }) => {
+  if (historico.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-16 text-center">
+        <History size={32} className="text-[#0A1128]/20" />
+        <p className="text-sm font-bold text-[#0A1128]/40">
+          Você ainda não possui compras ou utilizações registradas.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <ol className="space-y-3" aria-label="Histórico da loja">
+      {historico.map((evento) => {
+        const data = new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(new Date(evento.data));
+        const compra = evento.acao === "COMPRA";
+
+        return (
+          <li
+            key={`${evento.acao}-${evento.id}`}
+            className="flex items-start justify-between gap-4 rounded-2xl border border-[#0A1128]/10 bg-white p-4 shadow-sm"
+          >
+            <div>
+              <p className="text-sm font-black text-[#0A1128]">{evento.item.nome}</p>
+              <p className="mt-1 text-sm font-medium text-[#0A1128]/60">
+                {compra
+                  ? `Compra de ${evento.quantidade} ${evento.quantidade === 1 ? "unidade" : "unidades"}`
+                  : `Utilização${evento.statusUso === "APLICADO" ? " aplicada" : " ativada"}`}
+              </p>
+              {!compra && evento.efeitoUso && (
+                <p className="mt-1 text-xs font-medium text-[#0A1128]/50">{evento.efeitoUso}</p>
+              )}
+            </div>
+            <div className="shrink-0 text-right">
+              {compra && (
+                <p className="text-sm font-black text-[#B45309]">-{evento.custoCompra} ATP</p>
+              )}
+              <time className="mt-1 block text-xs font-medium text-[#0A1128]/45">{data}</time>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 };
 

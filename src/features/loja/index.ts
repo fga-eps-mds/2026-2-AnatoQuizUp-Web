@@ -3,6 +3,7 @@ export {
   comprarItem,
   listarCatalogo,
   listarInventario,
+  listarHistorico,
   usarItem,
 } from "./lojaService";
 export type {
@@ -14,5 +15,7 @@ export type {
   RespostaPaginada,
   TipoItemLoja,
   OrigemItemInventario,
+  UsoItemResponse,
+  HistoricoLojaItem,
 } from "./types";
 export { normalizarInventarioPlano } from "./types";

@@ -3,7 +3,9 @@ import {
   buscarInventarioCompleto,
   comprarItem,
   listarCatalogo,
+  listarHistorico,
   listarInventario,
+  usarItem,
 } from '../../../../src/features/loja/lojaService';
 
 jest.mock('../../../../src/shared/api/httpClient', () => ({
@@ -74,6 +76,21 @@ describe('lojaService', () => {
     expect(resultado).toEqual(inventario);
   });
 
+  it('deve listar o histórico unificado da loja', async () => {
+    const historico = {
+      dados: [{
+        id: 'compra-1', acao: 'COMPRA', data: '2026-09-27T10:00:00.000Z',
+        item: { id: 'item-1', nome: 'Coruja Sábia' }, quantidade: 1,
+        custoCompra: 20, efeitoUso: null, statusUso: null, aplicadoEm: null,
+      }],
+      metadados: { page: 1, limit: 100, total: 1, totalPages: 1 },
+    };
+    (httpClient.get as jest.Mock).mockResolvedValue({ data: historico });
+
+    await expect(listarHistorico({ limit: 100 })).resolves.toEqual(historico);
+    expect(httpClient.get).toHaveBeenCalledWith('/loja/meu-historico', { params: { limit: 100 } });
+  });
+
   it('deve comprar um item enviando o itemLojaId e quantidade 1 por padrão', async () => {
     const compra = {
       mensagem: 'Item comprado com sucesso.',
@@ -105,6 +122,25 @@ describe('lojaService', () => {
       itemLojaId: 'dica-1',
       quantidade: 3,
     });
+  });
+
+  it('deve usar item na rota existente e preservar o registro retornado pelo backend', async () => {
+    const uso = {
+      id: 'uso-1',
+      itemLojaId: 'cafe-1',
+      itemNome: 'Cafe do Foco',
+      efeito: 'Dobra o proximo acerto.',
+      status: 'ATIVO',
+      ativadoEm: '2026-09-27T10:00:00.000Z',
+      aplicadoEm: null,
+      questaoId: null,
+    };
+    const resposta = { mensagem: 'Ativado.', quantidadeRestante: 2, uso };
+    (httpClient.post as jest.Mock).mockResolvedValue({ data: resposta });
+
+    await expect(usarItem('cafe-1')).resolves.toEqual(resposta);
+
+    expect(httpClient.post).toHaveBeenCalledWith('/loja/usar', { itemLojaId: 'cafe-1' });
   });
 
   it('deve lançar erro tratado quando a requisição falhar', async () => {
