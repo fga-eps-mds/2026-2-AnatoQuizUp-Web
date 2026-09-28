@@ -101,6 +101,19 @@ export type UsoItemResponse = {
   };
 };
 
+// Evento da cronologia unificada de compras e usos da loja.
+export type HistoricoLojaItem = {
+  id: string;
+  acao: 'COMPRA' | 'USO';
+  data: string;
+  item: { id: string; nome: string };
+  quantidade: number;
+  custoCompra: number | null;
+  efeitoUso: string | null;
+  statusUso: 'ATIVO' | 'APLICADO' | null;
+  aplicadoEm: string | null;
+};
+
 // Parametros para listar o catalogo (filtro por tipo e paginacao).
 export type ListarCatalogoParams = {
   tipo?: TipoItemLoja;

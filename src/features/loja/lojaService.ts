@@ -6,6 +6,7 @@ import { extractErrorMessage } from "../manage-questions/model/questionService";
 import type {
   CompraItemResponse,
   InventarioItem,
+  HistoricoLojaItem,
   ItemLoja,
   ListarCatalogoParams,
   RespostaInventarioCompleto,
@@ -46,6 +47,22 @@ export const listarInventario = async (params?: {
       { params },
     );
 
+    return data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+// GET /loja/meu-historico — cronologia de compras e utilizacoes do aluno.
+export const listarHistorico = async (params?: {
+  page?: number;
+  limit?: number;
+}): Promise<RespostaPaginada<HistoricoLojaItem>> => {
+  try {
+    const { data } = await httpClient.get<RespostaPaginada<HistoricoLojaItem>>(
+      `${LOJA_ENDPOINT}/meu-historico`,
+      { params },
+    );
     return data;
   } catch (error) {
     throw new Error(extractErrorMessage(error));

@@ -5,6 +5,7 @@ import {
   comprarItem,
   listarCatalogo,
   listarInventario,
+  listarHistorico,
 } from '../../../../../../src/features/loja';
 import { LojaPage } from '../../../../../../src/pages/aluno/loja/ui/LojaPage';
 import { useStudentCoinsStore } from '../../../../../../src/features/student-coins/model/useStudentCoinsStore';
@@ -12,11 +13,13 @@ import { useStudentCoinsStore } from '../../../../../../src/features/student-coi
 jest.mock('../../../../../../src/features/loja', () => ({
   listarCatalogo: jest.fn(),
   listarInventario: jest.fn(),
+  listarHistorico: jest.fn(),
   comprarItem: jest.fn(),
 }));
 
 const listarCatalogoMock = listarCatalogo as jest.Mock;
 const listarInventarioMock = listarInventario as jest.Mock;
+const listarHistoricoMock = listarHistorico as jest.Mock;
 const comprarItemMock = comprarItem as jest.Mock;
 
 const item = (over: Record<string, unknown>) => ({
@@ -82,6 +85,10 @@ describe('LojaPage', () => {
     useStudentCoinsStore.setState({ saldoMoedas: 1000 });
     listarCatalogoMock.mockResolvedValue(catalogo);
     listarInventarioMock.mockResolvedValue(inventarioVazio);
+    listarHistoricoMock.mockResolvedValue({
+      dados: [],
+      metadados: { page: 1, limit: 100, total: 0, totalPages: 0 },
+    });
   });
 
   it('abre na aba Todos mostrando itens de todas as categorias', async () => {
@@ -219,6 +226,34 @@ describe('LojaPage', () => {
     expect(
       screen.getByText('Você ainda não possui itens. Compre algo na loja!'),
     ).toBeInTheDocument();
+  });
+
+  it('mostra compras e usos na aba de histórico', async () => {
+    listarHistoricoMock.mockResolvedValue({
+      dados: [
+        {
+          id: 'compra-1', acao: 'COMPRA', data: '2026-09-27T10:00:00.000Z',
+          item: { id: 'icone-1', nome: 'Coruja' }, quantidade: 1,
+          custoCompra: 60, efeitoUso: null, statusUso: null, aplicadoEm: null,
+        },
+        {
+          id: 'uso-1', acao: 'USO', data: '2026-09-27T11:00:00.000Z',
+          item: { id: 'cafe-1', nome: 'Café do Foco' }, quantidade: 1,
+          custoCompra: null, efeitoUso: 'Dobra o próximo acerto.', statusUso: 'APLICADO',
+          aplicadoEm: '2026-09-27T11:01:00.000Z',
+        },
+      ],
+      metadados: { page: 1, limit: 100, total: 2, totalPages: 1 },
+    });
+    render(<LojaPage />);
+    await screen.findByText('Coruja');
+
+    await userEvent.click(screen.getByRole('button', { name: /Histórico/i }));
+
+    expect(await screen.findByRole('list', { name: 'Histórico da loja' })).toBeInTheDocument();
+    expect(screen.getByText('Compra de 1 unidade')).toBeInTheDocument();
+    expect(screen.getByText('Dobra o próximo acerto.')).toBeInTheDocument();
+    expect(screen.getByText('-60 ATP')).toBeInTheDocument();
   });
 
   it('exibe erro de carregamento e tenta novamente', async () => {

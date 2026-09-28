@@ -3,6 +3,7 @@ import {
   buscarInventarioCompleto,
   comprarItem,
   listarCatalogo,
+  listarHistorico,
   listarInventario,
   usarItem,
 } from '../../../../src/features/loja/lojaService';
@@ -73,6 +74,21 @@ describe('lojaService', () => {
       params: { limit: 100 },
     });
     expect(resultado).toEqual(inventario);
+  });
+
+  it('deve listar o histórico unificado da loja', async () => {
+    const historico = {
+      dados: [{
+        id: 'compra-1', acao: 'COMPRA', data: '2026-09-27T10:00:00.000Z',
+        item: { id: 'item-1', nome: 'Coruja Sábia' }, quantidade: 1,
+        custoCompra: 20, efeitoUso: null, statusUso: null, aplicadoEm: null,
+      }],
+      metadados: { page: 1, limit: 100, total: 1, totalPages: 1 },
+    };
+    (httpClient.get as jest.Mock).mockResolvedValue({ data: historico });
+
+    await expect(listarHistorico({ limit: 100 })).resolves.toEqual(historico);
+    expect(httpClient.get).toHaveBeenCalledWith('/loja/meu-historico', { params: { limit: 100 } });
   });
 
   it('deve comprar um item enviando o itemLojaId e quantidade 1 por padrão', async () => {
