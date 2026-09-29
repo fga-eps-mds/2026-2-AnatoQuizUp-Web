@@ -2,6 +2,12 @@
 
 Frontend do projeto **AnatoQuizUp** — SPA em React + Vite + Tailwind. Consome **somente o BFF** (não acessa o Usuario-Service nem o Quiz-Service diretamente).
 
+## Ambiente de homologação
+
+Para testar a versão integrada disponibilizada ao time, acesse [AnatoQuizUp — Homologação](https://anatoquizup-homolog-2026-2.netlify.app).
+
+Esse ambiente contém dados de demonstração, não é produção e pode ser reinicializado durante validações da equipe.
+
 ## Stack
 
 - React 19 + TypeScript
