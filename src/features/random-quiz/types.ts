@@ -27,11 +27,13 @@ export type ListQuizQuestionResponse = {
   metadados: PaginationMetadata;
 };
 
-// Resposta do aluno a uma questao (alternativa marcada).
+// Resposta do aluno a uma questao (alternativa marcada). tentativaId liga a
+// resposta a rodada de quiz em andamento.
 export type QuestaoQuizAnwser = {
   questaoId: string;
   tipo: ApiQuestionType;
   respostaMarcada: QuestionAlternativeKey;
+  tentativaId?: string;
 };
 
 // Feedback retornado apos responder: correcao, recompensas e conquistas desbloqueadas.

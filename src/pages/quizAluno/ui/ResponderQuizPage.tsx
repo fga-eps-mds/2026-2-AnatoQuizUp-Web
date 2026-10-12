@@ -1,7 +1,8 @@
-// Pagina do "Treino Infinito" de quiz do aluno. Carrega questoes por tema/
-// dificuldade (vindos da query string), apresenta uma por vez com cronometro
-// pausavel, confirma a resposta exibindo o feedback (acerto/erro, ganho de moedas,
-// "saiba mais" e conquistas desbloqueadas) e busca novas paginas continuamente.
+// Pagina de quiz do aluno. Inicia uma rodada (tentativa) de ate 10 questoes para o
+// tema/dificuldade vindos da query string, apresenta uma questao por vez com
+// cronometro pausavel e confirma a resposta exibindo o feedback (acerto/erro, ganho
+// de moedas, "saiba mais" e conquistas desbloqueadas). Ao responder a ultima
+// questao, conclui a rodada e mostra a recompensa de XP e o nivel do aluno.
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -19,10 +20,13 @@ import {
   Zap,
 } from "lucide-react";
 
+import { responderQuestaoQuiz } from "../../../features/random-quiz/randomQuizService";
 import {
-  buscarQuestoesQuiz,
-  responderQuestaoQuiz,
-} from "../../../features/random-quiz/randomQuizService";
+  concluirTentativaQuiz,
+  iniciarTentativaQuiz,
+} from "../../../features/progressao/progressaoService";
+import { RecompensaQuiz } from "../../../features/progressao/ui/RecompensaQuiz";
+import type { ResultadoTentativa } from "../../../features/progressao/types";
 import type {
   QuizQuestion,
   QuestaoQuizFeedback,
@@ -43,7 +47,17 @@ export const ResponderQuizPage = () => {
     (state) => state.adicionarDesbloqueios,
   );
 
-  // Questoes da pagina atual e o feedback da questao respondida (se houver).
+  // Rodada em andamento: id da tentativa (amarra as respostas no backend), as
+  // questoes sorteadas e, ao final, o resultado com a recompensa de XP.
+  const [tentativaId, setTentativaId] = useState<string | null>(null);
+  const [resultado, setResultado] = useState<ResultadoTentativa | null>(null);
+  const [isConcluindo, setIsConcluindo] = useState(false);
+  const [erroConclusao, setErroConclusao] = useState<string | null>(null);
+  const [erroResposta, setErroResposta] = useState<string | null>(null);
+  // Incrementado em "Jogar de novo" para iniciar outra rodada com os mesmos filtros.
+  const [rodada, setRodada] = useState(0);
+
+  // Questoes da rodada e o feedback da questao respondida (se houver).
   const [questoes, setQuestoes] = useState<QuizQuestion[]>([]);
   const [feedback, setFeedback] = useState<
     (QuestaoQuizFeedback & { respostaCorreta?: string }) | null
@@ -51,10 +65,8 @@ export const ResponderQuizPage = () => {
   const [isRespondendo, setIsRespondendo] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Controle de progresso: pagina/indice na pagina, numero global e placar.
-  const [paginaAtual, setPaginaAtual] = useState(1);
+  // Controle de progresso: indice da questao atual na rodada e placar.
   const [indiceAtual, setIndiceAtual] = useState(0);
-  const [numeroDaQuestao, setNumeroDaQuestao] = useState(1);
   const [acertos, setAcertos] = useState(0);
   const [questoesRespondidas, setQuestoesRespondidas] = useState(0);
 
@@ -66,26 +78,22 @@ export const ResponderQuizPage = () => {
   const [segundos, setSegundos] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Tamanho de cada pagina de questoes buscada do backend.
-  const limit = 10;
-
-  // Carrega a primeira pagina de questoes ao montar e quando os filtros mudam.
+  // Inicia a rodada ao montar, quando os filtros mudam e a cada "Jogar de novo".
+  // O backend sorteia ate 10 questoes; se houver menos, a rodada usa todas.
   useEffect(() => {
     let deveAtualizarEstado = true;
 
-    buscarQuestoesQuiz({
-      tema: temaQuery,
-      dificuldade: dificuldadeQuery as ApiQuestionDifficulty,
-      page: 1,
-      limit,
+    iniciarTentativaQuiz({
+      tema: temaQuery || undefined,
+      dificuldade: (dificuldadeQuery || undefined) as ApiQuestionDifficulty | undefined,
     })
-      .then((response) => {
+      .then((tentativa) => {
         if (!deveAtualizarEstado) return;
-        setQuestoes(response.dados);
-        setPaginaAtual(1);
+        setTentativaId(tentativa.tentativaId);
+        setQuestoes(tentativa.questoes);
         setIndiceAtual(0);
       })
-      .catch((error) => console.error("Erro ao buscar questões:", error))
+      .catch((error) => console.error("Erro ao iniciar o quiz:", error))
       .finally(() => {
         if (deveAtualizarEstado) setIsLoading(false);
       });
@@ -93,18 +101,20 @@ export const ResponderQuizPage = () => {
     return () => {
       deveAtualizarEstado = false;
     };
-  }, [temaQuery, dificuldadeQuery]);
+  }, [temaQuery, dificuldadeQuery, rodada]);
 
-  // Cronometro: incrementa a cada segundo enquanto nao esta pausado/carregando.
+  // Cronometro: incrementa a cada segundo enquanto nao esta pausado/carregando
+  // e para quando a rodada termina.
+  const rodadaConcluida = resultado !== null;
   useEffect(() => {
     let timer: number | undefined;
-    if (!isPaused && !isLoading && questoes.length > 0) {
+    if (!isPaused && !isLoading && questoes.length > 0 && !rodadaConcluida) {
       timer = window.setInterval(() => setSegundos((s) => s + 1), 1000);
     }
     return () => {
       if (timer) window.clearInterval(timer);
     };
-  }, [isPaused, isLoading, questoes.length]);
+  }, [isPaused, isLoading, questoes.length, rodadaConcluida]);
 
   // Formata os segundos acumulados no formato MM:SS.
   const formatarTempo = (totalSegundos: number) => {
@@ -114,6 +124,36 @@ export const ResponderQuizPage = () => {
     const s = (totalSegundos % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
+
+  /** Reinicia a tela e pede uma nova rodada com o mesmo tema e dificuldade. */
+  const handleJogarDeNovo = () => {
+    setResultado(null);
+    setTentativaId(null);
+    setQuestoes([]);
+    setIndiceAtual(0);
+    setAcertos(0);
+    setQuestoesRespondidas(0);
+    setSegundos(0);
+    setAlternativaSelecionada(null);
+    setJaRespondeu(false);
+    setFeedback(null);
+    setIsPaused(false);
+    setErroConclusao(null);
+    setErroResposta(null);
+    setIsLoading(true);
+    setRodada((atual) => atual + 1);
+  };
+
+  // Rodada concluida: mostra a recompensa de XP, o nivel e a celebracao de novo nivel.
+  if (resultado) {
+    return (
+      <RecompensaQuiz
+        resultado={resultado}
+        onJogarDeNovo={handleJogarDeNovo}
+        onVoltar={() => navigate("/aluno/quiz/escolha")}
+      />
+    );
+  }
 
   if (isLoading && questoes.length === 0) {
     return (
@@ -163,6 +203,11 @@ export const ResponderQuizPage = () => {
     );
   }
 
+  // Posicao na rodada: numero exibido e se esta e a ultima questao.
+  const totalQuestoes = questoes.length;
+  const numeroDaQuestao = indiceAtual + 1;
+  const ehUltimaQuestao = indiceAtual >= totalQuestoes - 1;
+
   // Derivados do feedback: se acertou e se houve ganho de moedas a destacar.
   const acertou = feedback?.correcao ?? false;
   const deveMostrarGanhoMoedas =
@@ -188,10 +233,13 @@ export const ResponderQuizPage = () => {
 
     try {
       setIsRespondendo(true);
+      setErroResposta(null);
       const response = await responderQuestaoQuiz({
         questaoId: questaoAtual.id,
         tipo: questaoAtual.tipo,
         respostaMarcada: alternativaSelecionada as "A" | "B" | "C" | "D" | "E",
+        // Liga a resposta a rodada; e o que permite ao backend conceder o XP no final.
+        ...(tentativaId ? { tentativaId } : {}),
       });
 
       setFeedback(response);
@@ -206,58 +254,38 @@ export const ResponderQuizPage = () => {
       }
     } catch (error) {
       console.error("Erro ao responder questão:", error);
+      setErroResposta("Não foi possível enviar sua resposta. Tente novamente.");
     } finally {
       setIsRespondendo(false);
     }
   };
 
-  /**
-   * Avanca para a proxima questao. Dentro da pagina, apenas incrementa o indice;
-   * ao chegar ao fim, busca a proxima pagina (ou reinicia da pagina 1 se acabarem),
-   * garantindo o "treino infinito".
-   */
-  const handleProxima = async () => {
-    // Reseta o estado da questao para a proxima.
+  /** Avanca para a proxima questao da rodada, limpando o estado da questao atual. */
+  const handleProxima = () => {
     setAlternativaSelecionada(null);
     setJaRespondeu(false);
     setFeedback(null);
     setIsPaused(false);
-    setNumeroDaQuestao((prev) => prev + 1);
+    setIndiceAtual((prev) => prev + 1);
+  };
 
-    // No fim da pagina atual: tenta a proxima pagina; se vazia, volta ao inicio.
-    if (indiceAtual >= questoes.length - 1) {
-      setIsLoading(true);
-      try {
-        const proxPagina = paginaAtual + 1;
-        const response = await buscarQuestoesQuiz({
-          tema: temaQuery,
-          dificuldade: dificuldadeQuery as ApiQuestionDifficulty,
-          page: proxPagina,
-          limit,
-        });
+  /**
+   * Conclui a rodada apos a ultima questao e recebe a recompensa de XP.
+   * A conclusao e idempotente no backend, entao tentar de novo apos uma falha
+   * de rede e seguro: a mesma rodada nunca concede XP duas vezes.
+   */
+  const handleConcluir = async () => {
+    if (!tentativaId || isConcluindo) return;
 
-        if (response.dados.length > 0) {
-          setQuestoes(response.dados);
-          setPaginaAtual(proxPagina);
-          setIndiceAtual(0);
-        } else {
-          const responseInicial = await buscarQuestoesQuiz({
-            tema: temaQuery,
-            dificuldade: dificuldadeQuery as ApiQuestionDifficulty,
-            page: 1,
-            limit,
-          });
-          setQuestoes(responseInicial.dados);
-          setPaginaAtual(1);
-          setIndiceAtual(0);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar novas questões:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setIndiceAtual((prev) => prev + 1);
+    try {
+      setIsConcluindo(true);
+      setErroConclusao(null);
+      setResultado(await concluirTentativaQuiz(tentativaId));
+    } catch (error) {
+      console.error("Erro ao concluir o quiz:", error);
+      setErroConclusao("Não foi possível concluir o quiz. Tente novamente.");
+    } finally {
+      setIsConcluindo(false);
     }
   };
 
@@ -266,9 +294,10 @@ export const ResponderQuizPage = () => {
       <div className="w-full max-w-5xl">
         <button
           onClick={() => navigate("/aluno/quiz/escolha")}
+          title="Sair antes de concluir a rodada não concede XP"
           className="flex items-center gap-2 text-[11px] text-rose-500/70 hover:text-rose-600 font-black uppercase tracking-wide mb-4 transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Encerrar Treino
+          <ArrowLeft className="w-3.5 h-3.5" /> Sair do quiz
         </button>
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-4 flex justify-between items-center gap-4">
@@ -277,7 +306,8 @@ export const ResponderQuizPage = () => {
               Prática de Anatomia
             </h2>
             <p className="text-xs text-[#0A1128]/60 mt-0.5">
-              Modo Treino Infinito
+              Rodada de {totalQuestoes}{" "}
+              {totalQuestoes === 1 ? "questão" : "questões"}
             </p>
           </div>
 
@@ -303,7 +333,7 @@ export const ResponderQuizPage = () => {
                 Questão
               </p>
               <p className="text-sm font-black text-[#0A1128]">
-                {numeroDaQuestao}
+                {numeroDaQuestao} de {totalQuestoes}
               </p>
             </div>
 
@@ -339,7 +369,7 @@ export const ResponderQuizPage = () => {
           <div className="bg-white rounded-xl p-16 shadow-sm border border-gray-100 mb-4 flex flex-col items-center justify-center text-center animate-fade-in">
             <PauseCircle className="w-16 h-16 text-[#14D5C2] mb-4 opacity-50" />
             <h2 className="text-2xl font-black text-[#0A1128] mb-2">
-              Treino Pausado
+              Quiz pausado
             </h2>
             <p className="text-[#0A1128]/60 mb-8 max-w-md">
               O tempo foi interrompido. A questão está oculta para que possa
@@ -349,7 +379,7 @@ export const ResponderQuizPage = () => {
               onClick={() => setIsPaused(false)}
               className="bg-[#14D5C2] text-white px-8 py-3 rounded-full text-sm font-bold uppercase tracking-wide shadow-md"
             >
-              Retomar Treino
+              Retomar quiz
             </button>
           </div>
         ) : (
@@ -460,7 +490,16 @@ export const ResponderQuizPage = () => {
               </div>
 
               <div className="w-full sm:w-auto">
-                {jaRespondeu ? (
+                {jaRespondeu && ehUltimaQuestao ? (
+                  <button
+                    onClick={handleConcluir}
+                    disabled={isConcluindo}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#14D5C2] px-8 py-3 text-xs font-bold uppercase tracking-wide text-white shadow-md hover:brightness-95 disabled:opacity-50 sm:w-auto"
+                  >
+                    {isConcluindo ? "Concluindo..." : "Concluir quiz"}
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                ) : jaRespondeu ? (
                   <button
                     onClick={handleProxima}
                     className="flex w-full items-center justify-center gap-2 rounded-full bg-[#14D5C2] px-8 py-3 text-xs font-bold uppercase tracking-wide text-white shadow-md hover:brightness-95 sm:w-auto"
@@ -479,6 +518,15 @@ export const ResponderQuizPage = () => {
                 )}
               </div>
             </div>
+
+            {(erroResposta ?? erroConclusao) && (
+              <p
+                role="alert"
+                className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600"
+              >
+                {erroResposta ?? erroConclusao}
+              </p>
+            )}
           </div>
         )}
 

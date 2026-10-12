@@ -38,7 +38,7 @@ const CONFIG_DEGRAU: Record<1 | 2 | 3, DegrauConfig> = {
   },
 };
 
-/** Um degrau do podio: avatar, nome (com selo "Você") e o bloco com posicao e acertos. */
+/** Um degrau do podio: avatar, nome (com nivel e selo "Você") e o bloco com posicao e metrica. */
 const Degrau = ({
   linha,
   rotuloMetrica,
@@ -64,6 +64,11 @@ const Degrau = ({
           <span className="flex items-center gap-1">
             <span className="truncate text-sm font-black text-[#0A1128]">{linha.nome}</span>
           </span>
+          {linha.nivel !== undefined && (
+            <span className="text-[10px] font-black uppercase tracking-wide text-[#7C3AED]">
+              Nível {linha.nivel}
+            </span>
+          )}
           {linha.destaque && (
             <span className="rounded-full bg-[#00A88F] px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white">
               Você
@@ -81,7 +86,7 @@ const Degrau = ({
           {config.rotulo}
         </span>
         <span className="mt-1 text-xl font-black leading-none text-[#00A88F] tabular-nums">
-          {linha.totalAcertos}
+          {(linha.pontuacao ?? linha.totalAcertos).toLocaleString('pt-BR')}
         </span>
         <span className="text-[9px] font-bold uppercase tracking-wide text-[#0A1128]/40">
           {rotuloMetrica}

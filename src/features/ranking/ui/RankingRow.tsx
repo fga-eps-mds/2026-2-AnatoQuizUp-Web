@@ -15,8 +15,9 @@ const corPosicao = (posicao: number): string => {
 };
 
 /**
- * Linha do ranking (fora do podio): posicao, avatar, nome/nickname, total de acertos
- * e taxa. Destaca visualmente a linha do proprio usuario com o selo "Você".
+ * Linha do ranking (fora do podio): posicao, avatar, nome/nickname, metrica principal
+ * (XP ou acertos) e taxa. Mostra o nivel quando o ranking e por XP e destaca
+ * visualmente a linha do proprio usuario com o selo "Você".
  */
 export const RankingRow = ({ linha, rotuloMetrica }: RankingRowProps) => {
   const destaque = linha.destaque;
@@ -44,6 +45,11 @@ export const RankingRow = ({ linha, rotuloMetrica }: RankingRowProps) => {
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2">
           <h3 className="truncate text-sm font-black text-[#0A1128] sm:text-base">{linha.nome}</h3>
+          {linha.nivel !== undefined && (
+            <span className="shrink-0 rounded-full bg-[#7C3AED]/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-[#7C3AED]">
+              Nível {linha.nivel}
+            </span>
+          )}
           {destaque && (
             <span className="shrink-0 rounded-full bg-[#00A88F] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white">
               Você
@@ -57,7 +63,7 @@ export const RankingRow = ({ linha, rotuloMetrica }: RankingRowProps) => {
 
       <div className="flex shrink-0 flex-col items-end">
         <span className="text-lg font-black leading-none text-[#00A88F] tabular-nums sm:text-xl">
-          {linha.totalAcertos}
+          {(linha.pontuacao ?? linha.totalAcertos).toLocaleString('pt-BR')}
         </span>
         <span className="text-[10px] font-bold uppercase tracking-wide text-[#0A1128]/40">
           {rotuloMetrica}

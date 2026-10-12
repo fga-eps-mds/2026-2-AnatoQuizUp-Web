@@ -8,6 +8,7 @@ import { obterRankingGeral } from '../../../../features/ranking';
 import { AchievementHighlights, listarConquistasDestacadas, type ConquistaDestacada } from '../../../../features/achievements';
 import { listarAmigos } from '../../../../features/friendship';
 import { buscarInventarioCompleto } from '../../../../features/loja';
+import { BarraNivel, buscarProgressoXp, type ProgressoNivel } from '../../../../features/progressao';
 import { converterEquipadosParaSlots, useEquippedCosmeticsStore } from '../../../../features/profile-cosmetics';
 import { useStudentCoinsStore } from '../../../../features/student-coins/model/useStudentCoinsStore';
 import { AvatarCosmetico } from '../../../../shared/ui/profile-identity-card';
@@ -122,6 +123,7 @@ export const PerfilAlunoPage = ({ previewUser }: { previewUser?: User } = {}) =>
   const [stats, setStats] = useState<StatsPerfil>({ respondidas: 0, amigos: 0 });
   const [carregandoStats, setCarregandoStats] = useState(!previewUser);
   const [conquistasDestacadas, setConquistasDestacadas] = useState<ConquistaDestacada[]>([]);
+  const [progressoXp, setProgressoXp] = useState<ProgressoNivel | null>(null);
   const cosmeticos = useEquippedCosmeticsStore((state) => state.cosmeticos);
   const setCosmeticos = useEquippedCosmeticsStore((state) => state.setCosmeticos);
   const saldoMoedas = useStudentCoinsStore((state) => state.saldoMoedas);
@@ -135,7 +137,8 @@ export const PerfilAlunoPage = ({ previewUser }: { previewUser?: User } = {}) =>
       listarAmigos({ limit: 1 }),
       buscarInventarioCompleto(),
       listarConquistasDestacadas(),
-    ]).then(([dashboard, ranking, friends, inventory, highlights]) => {
+      buscarProgressoXp(),
+    ]).then(([dashboard, ranking, friends, inventory, highlights, progresso]) => {
       if (!active) return;
       setPerformance({
         totalAcertos: dashboard.status === 'fulfilled' ? dashboard.value.data.totalAcertos ?? null : null,
@@ -148,6 +151,7 @@ export const PerfilAlunoPage = ({ previewUser }: { previewUser?: User } = {}) =>
       });
       if (inventory.status === 'fulfilled' && Array.isArray(inventory.value)) setCosmeticos(converterEquipadosParaSlots(inventory.value));
       setConquistasDestacadas(highlights.status === 'fulfilled' && Array.isArray(highlights.value) ? highlights.value : []);
+      setProgressoXp(progresso.status === 'fulfilled' && typeof progresso.value?.nivel === 'number' ? progresso.value : null);
       setCarregandoStats(false);
     });
     return () => { active = false; };
@@ -174,6 +178,10 @@ export const PerfilAlunoPage = ({ previewUser }: { previewUser?: User } = {}) =>
           <h3>Aluno</h3>
           {cosmeticos.TITULO && <span className="profile-equipped-title">{cosmeticos.TITULO.nome}</span>}
           <p className="profile-atp"><Coins size={17} aria-hidden="true" />{saldoMoedas.toLocaleString('pt-BR')} ATP</p>
+          {progressoXp && <div className="profile-level" aria-label="Nível e experiência">
+            <p className="profile-level-total">{progressoXp.xpTotal.toLocaleString('pt-BR')} XP acumulados</p>
+            <BarraNivel progresso={progressoXp} />
+          </div>}
           <button className="profile-customize-link" type="button" onClick={() => navigate('/aluno/perfil/personalizar')}>Personalizar perfil</button>
           <PerformanceStrip data={performance} onNavigate={navigate} />
         </section>

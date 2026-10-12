@@ -9,6 +9,9 @@ import * as historicoService from '../../../../../src/features/historico-quiz/hi
 import * as randomQuizService from '../../../../../src/features/random-quiz/randomQuizService';
 
 jest.mock('../../../../../src/features/historico-quiz/historicoQuizService');
+jest.mock('../../../../../src/features/progressao/ui/HistoricoXp', () => ({
+  HistoricoXp: () => <div data-testid="historico-xp">Historico de XP</div>,
+}));
 jest.mock('../../../../../src/features/random-quiz/randomQuizService');
 
 const mockNavigate = jest.fn();
@@ -387,5 +390,30 @@ describe('HistoricoPage', () => {
         expect.any(Error),
       );
     });
+  });
+
+  it('alterna para a aba de XP recebido e volta para as sessões de prática', async () => {
+    (historicoService.buscarHistoricoQuiz as jest.Mock).mockResolvedValue(mockResponse);
+
+    render(
+      <MemoryRouter>
+        <HistoricoPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByText('23/05/2026')).toBeInTheDocument());
+    expect(screen.queryByTestId('historico-xp')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sessões de prática' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'XP recebido' }));
+
+    expect(screen.getByTestId('historico-xp')).toBeInTheDocument();
+    expect(screen.queryByText('23/05/2026')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'XP recebido' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sessões de prática' }));
+
+    expect(screen.getByText('23/05/2026')).toBeInTheDocument();
+    expect(screen.queryByTestId('historico-xp')).not.toBeInTheDocument();
   });
 });

@@ -4,10 +4,20 @@ import { Calendar, ChevronRight, ChevronLeft, Loader2, SearchX, Target, BookOpen
 import { buscarHistoricoQuiz } from '../../../features/historico-quiz/historicoQuizService';
 import { buscarQuantidadeDeQuestoesPorTema } from '../../../features/random-quiz/randomQuizService';
 import type { ItemHistoricoQuiz } from '../../../features/historico-quiz/types';
+import { HistoricoXp } from '../../../features/progressao/ui/HistoricoXp';
+
+// Abas da pagina: sessoes de pratica (respostas) e XP recebido.
+type AbaHistorico = 'pratica' | 'xp';
+
+const ABAS: Array<{ key: AbaHistorico; label: string }> = [
+  { key: 'pratica', label: 'Sessões de prática' },
+  { key: 'xp', label: 'XP recebido' },
+];
 
 /**
  * Pagina de historico de pratica do aluno: lista as respostas, filtra por tema e
  * agrupa por data+tema+dificuldade em "sessoes" clicaveis que levam aos detalhes.
+ * A aba "XP recebido" mostra o historico de XP (data, origem, quiz e valor).
  */
 export const HistoricoPage = () => {
   const navigate = useNavigate();
@@ -15,6 +25,7 @@ export const HistoricoPage = () => {
   const [historicoBruto, setHistoricoBruto] = useState<ItemHistoricoQuiz[]>([]);
   const [temasFiltro, setTemasFiltro] = useState<{ nome: string }[]>([]);
   const [temaSelecionado, setTemaSelecionado] = useState<string>('Todos');
+  const [aba, setAba] = useState<AbaHistorico>('pratica');
 
   // Estado de carga e controle de paginacao.
   const [isLoading, setIsLoading] = useState(true);
@@ -131,6 +142,36 @@ export const HistoricoPage = () => {
           </div>
         </div>
 
+        {/* Alterna entre as sessoes de pratica e o historico de XP. */}
+        <div className="mb-4 w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+          <div className="grid grid-cols-2">
+            {ABAS.map((opcao) => {
+              const ativa = aba === opcao.key;
+
+              return (
+                <button
+                  key={opcao.key}
+                  type="button"
+                  onClick={() => setAba(opcao.key)}
+                  aria-pressed={ativa}
+                  className={`min-h-12 border-r border-gray-100 px-3 text-sm font-black transition-colors last:border-r-0 ${
+                    ativa
+                      ? 'bg-[#E6FCFA] text-[#0A1128]'
+                      : 'bg-white text-[#0A1128]/60 hover:bg-gray-50 hover:text-[#0A1128]'
+                  }`}
+                >
+                  {opcao.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {aba === 'xp' ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <HistoricoXp />
+          </div>
+        ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Barra de filtros por tema (rolavel horizontalmente). */}
           <div className="p-4 border-b border-gray-100 overflow-x-auto custom-scrollbar">
@@ -249,6 +290,7 @@ export const HistoricoPage = () => {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

@@ -83,6 +83,9 @@ export const RankingAlunoPage = () => {
     detalhe: montarDetalhe(entrada.curso, entrada.semestre),
     totalAcertos: entrada.totalAcertos,
     taxaAcerto: entrada.taxaAcerto,
+    // Ranking de alunos e ordenado por XP: o XP e a metrica principal da linha.
+    pontuacao: entrada.xpTotal ?? 0,
+    nivel: entrada.nivel ?? 1,
     destaque: entrada.ehUsuarioAtual,
     cosmeticos: converterItensEquipadosParaSlots(entrada.cosmeticos ?? []),
   });
@@ -128,8 +131,8 @@ export const RankingAlunoPage = () => {
             <h1 className="text-3xl font-black">Ranking</h1>
           </div>
           <p className="max-w-2xl text-sm font-medium text-[#0A1128]/60">
-            Acompanhe seu desempenho no AnatoQuizUp pelo total de acertos e veja como você está em
-            relação aos colegas e amigos.
+            Acompanhe sua evolução no AnatoQuizUp pelo XP acumulado ao concluir quizzes e veja
+            como você está em relação aos colegas e amigos.
           </p>
         </div>
 
@@ -208,14 +211,14 @@ export const RankingAlunoPage = () => {
 
         <RankingBoard
           linhas={linhas}
-          rotuloMetrica="acertos"
+          rotuloMetrica="XP"
           usuarioAtual={usuarioAtual}
           carregando={carregando}
           erro={erro}
           mensagemVazio={
             aba === 'amigos'
               ? 'Ninguém por aqui ainda. Adicione amigos e comece a responder questões para aparecer no ranking.'
-              : 'Ainda não há alunos no ranking. Responda questões para somar acertos e aparecer aqui.'
+              : 'Ainda não há alunos no ranking. Conclua quizzes para ganhar XP e aparecer aqui.'
           }
         />
       </section>
