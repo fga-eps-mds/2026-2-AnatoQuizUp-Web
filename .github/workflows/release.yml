@@ -34,16 +34,10 @@ jobs:
         run: |
           ARCHIVE="AnatoQuizUp-Front-${TAG}.zip"
 
-          zip -r "$ARCHIVE" \
-            src/ test/ \
-            package.json package-lock.json \
-            jest.config.cjs sonar-project.properties \
-            tsconfig*.json \
-            --exclude "*.DS_Store" \
-                      "node_modules/*" \
-                      "coverage/*" \
-                      "dist/*" \
-                      "build/*"
+          git archive --format=zip --output="$ARCHIVE" "$TAG"
+
+          unzip -l "$ARCHIVE" | grep 'src/'
+          unzip -l "$ARCHIVE" | grep 'test/'
 
           echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
 

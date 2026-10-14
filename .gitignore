@@ -37,3 +37,5 @@ sonar-report.xml
 
 # Arquivos temporarios do SonarScanner
 .scannerwork/
+__pycache__/
+*.py[cod]
