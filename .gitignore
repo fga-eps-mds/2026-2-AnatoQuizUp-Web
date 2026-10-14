@@ -15,6 +15,9 @@ coverage
 dist-ssr
 *.local
 
+# Relatórios gerados para análise de testes
+sonar-report.xml
+
 # Env files
 .env
 .env.local
@@ -31,3 +34,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Arquivos temporarios do SonarScanner
+.scannerwork/
