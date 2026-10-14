@@ -19,13 +19,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install dotenv
-        run: pip install python-dotenv packaging pandas
+      - name: Instalar dependências do parser
+        run: pip install requests python-dotenv packaging pandas
 
       - name: Criar arquivo .env
         run: |
           touch ./sonar_scripts/.env
           echo GITHUB_TOKEN=${{ secrets.DOC_PUSH_TOKEN }} >> ./sonar_scripts/.env
+          echo SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} >> ./sonar_scripts/.env
           echo RELEASE_MAJOR=${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'MAJOR RELEASE') }} >> ./sonar_scripts/.env
           echo RELEASE_MINOR=${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'MINOR RELEASE') }} >> ./sonar_scripts/.env
           echo RELEASE_FIX=${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'FIX RELEASE') }} >> ./sonar_scripts/.env

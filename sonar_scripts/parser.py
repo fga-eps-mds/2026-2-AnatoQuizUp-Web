@@ -22,6 +22,7 @@ REPO_ISSUES = os.getenv('REPO_DOC')
 
 # Configurar as variáveis de ambiente
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
+SONAR_TOKEN = os.getenv('SONAR_TOKEN')
 RELEASE_MAJOR = os.getenv('RELEASE_MAJOR')
 RELEASE_MINOR = os.getenv('RELEASE_MINOR')
 RELEASE_FIX = os.getenv('RELEASE_FIX')
@@ -61,6 +62,7 @@ def get_latest_release():
         'Authorization': f'token {GITHUB_TOKEN}'
     }
     response = requests.get(url, headers=headers)
+    response.raise_for_status()
     releases = response.json()
     
     if releases:
@@ -70,19 +72,22 @@ def get_latest_release():
 # Cria um novo nome de tag
 def new_tag_name():
     old_tag = get_latest_release()
-    try:
-        old_version = version.parse(old_tag)
-    except version.InvalidVersion:
-        old_version = version.parse('0.0.0')
 
-    if RELEASE_MAJOR == 'true':
-        return f'{old_version.major + 1}.0.0'
-    elif RELEASE_MINOR == 'true':
-        return f'{old_version.major}.{old_version.minor + 1}.0'
-    elif RELEASE_FIX == 'true':
-        return f'{old_version.major}.{old_version.minor}.{old_version.micro + 1}'
-    else:
-        return f'{old_version.major}.{old_version.minor}.{old_version.micro + 1}'
+    try:
+        old_version = version.parse(old_tag.lstrip("v"))
+    except version.InvalidVersion:
+        old_version = version.parse("0.0.0")
+
+    if RELEASE_MAJOR == "true":
+        return f"v{old_version.major + 1}.0.0"
+
+    if RELEASE_MINOR == "true":
+        return f"v{old_version.major}.{old_version.minor + 1}.0"
+
+    if RELEASE_FIX == "true":
+        return f"v{old_version.major}.{old_version.minor}.{old_version.micro + 1}"
+
+    return f"v{old_version}"
     
 # Cria a nova release
 def create_release():
@@ -97,6 +102,7 @@ def create_release():
         'name': tag
     }
     response = requests.post(url, headers=headers, json=payload)
+    response.raise_for_status()
     res_data = response.json()
     return res_data.get('upload_url'), tag
 
@@ -105,19 +111,75 @@ def create_release():
 #################
 
 def save_sonar_metrics(tag):
-    response = requests.get(f'{BASE_URL_SONAR}{REPO}&metricKeys={",".join(METRICS_SONAR)}&ps=500')
+    if not SONAR_TOKEN:
+        raise RuntimeError("SONAR_TOKEN não configurado.")
 
-    j = json.loads(response.text)
+    project_key = f"fga-eps-mds_{REPO}"
+    url = "https://sonarcloud.io/api/measures/component_tree"
 
-    print("Extração do Sonar concluída.")
+    auth = (SONAR_TOKEN, "")
+    metrics = ",".join(METRICS_SONAR)
 
-    file_path = f'./analytics-raw-data/fga-eps-mds-{REPO}-{TODAY.strftime("%m-%d-%Y-%H-%M-%S")}-{tag}.json'
+    componentes = []
+    pagina = 1
+    componente_principal = None
 
-    with open(file_path, 'w') as fp:
-        fp.write(json.dumps(j))
-        fp.close()
+    while True:
+        response = requests.get(
+            url,
+            auth=auth,
+            params={
+                "component": project_key,
+                "metricKeys": metrics,
+                "qualifiers": "FIL,DIR,UTS",
+                "ps": 500,
+                "p": pagina,
+            },
+            timeout=60,
+        )
 
-    return
+        response.raise_for_status()
+        dados = response.json()
+
+        if componente_principal is None:
+            componente_principal = dados.get("baseComponent")
+
+        componentes.extend(dados.get("components", []))
+
+        paging = dados.get("paging", {})
+        total = paging.get("total", 0)
+        page_size = paging.get("pageSize", 500)
+
+        if pagina * page_size >= total:
+            break
+
+        pagina += 1
+
+    tag_formatada = tag if tag.startswith("v") else f"v{tag}"
+
+    os.makedirs("analytics-raw-data", exist_ok=True)
+
+    file_path = (
+        "./analytics-raw-data/"
+        "fga-eps-mds-2026_2_UNB-AnatoQuizUp-WEB-"
+        f"{TODAY.strftime('%m-%d-%Y-%H-%M-%S')}-"
+        f"{tag_formatada}.json"
+    )
+
+    resultado = {
+        "timestamp": TODAY.isoformat(),
+        "tag": tag_formatada,
+        "project": project_key,
+        "metrics_requested": METRICS_SONAR,
+        "baseComponent": componente_principal,
+        "components": componentes,
+    }
+
+    with open(file_path, "w", encoding="utf-8") as arquivo:
+        json.dump(resultado, arquivo, ensure_ascii=False, indent=2)
+
+    print(f"Métricas SonarCloud exportadas: {file_path}")
+    print(f"Componentes coletados: {len(componentes)}")
 
 ##################
 # FUNÇÕES GITHUB #
@@ -186,7 +248,16 @@ def save_github_metrics_issues():
         json.dump(issues, fp, indent=4)
 
 if __name__ == "__main__":
-    _, tag = create_release()
+    is_release = (
+        RELEASE_MAJOR == "true"
+        or RELEASE_MINOR == "true"
+        or RELEASE_FIX == "true"
+    )
+
+    if is_release:
+        _, tag = create_release()
+    else:
+        tag = get_latest_release()
 
     save_sonar_metrics(tag)
     save_github_metrics_runs()
