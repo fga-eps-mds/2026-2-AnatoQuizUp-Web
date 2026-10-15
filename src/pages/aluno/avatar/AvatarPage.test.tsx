@@ -31,11 +31,21 @@ describe('AvatarPage', () => {
     expect(screen.getByRole('button', { name: 'Nenhum' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('mostra a aba Roupas desabilitada (fora de escopo)', () => {
+  it('a aba Calçados lista os itens liberados e permite equipar um', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Editar aparência do avatar' }));
 
-    expect(screen.getByRole('tab', { name: 'Roupas' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('tab', { name: 'Calçados' }));
+
+    expect(screen.getByRole('button', { name: 'Nenhum' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Sapato de plantão' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tênis cano alto' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tênis esportivo' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tênis esportivo' }));
+
+    expect(screen.getByRole('button', { name: 'Tênis esportivo' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
   });
 
   it('a aba Acessórios lista os itens liberados e permite equipar um', () => {
@@ -53,6 +63,23 @@ describe('AvatarPage', () => {
 
     expect(screen.getByRole('button', { name: 'Coroa' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
+  });
+
+  it('luvas ficam num slot proprio e podem ser combinadas com outro acessório', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Editar aparência do avatar' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Acessórios' }));
+
+    expect(screen.getByRole('button', { name: 'Nenhuma' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Luva de boxe' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Luva cirúrgica' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Luva de lã' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Coroa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Luva de boxe' }));
+
+    expect(screen.getByRole('button', { name: 'Coroa' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Luva de boxe' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('habilita Salvar/Cancelar somente após alterar a seleção', () => {
