@@ -41,6 +41,17 @@ const config = {
     '!src/setupTests.ts',
     '!src/shared/config/env.ts',
   ],
+  reporters: [
+    'default',
+    [
+      '@casualbot/jest-sonar-reporter',
+      {
+        outputDirectory: '.',
+        outputName: 'sonar-report.xml',
+        relativePaths: true,
+      },
+    ],
+  ],
 };
 
 module.exports = config;

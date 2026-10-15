@@ -107,6 +107,17 @@ const renderQuestionsPage = (openCreateModal = false) => render(
   </MemoryRouter>,
 );
 
+// Esses cenários verificam validação e envio, sem depender de cada tecla digitada.
+// Colar o texto preserva os eventos de entrada e evita renderizações por caractere.
+const fillText = async (
+  user: ReturnType<typeof userEvent.setup>,
+  input: HTMLElement,
+  value: string,
+) => {
+  await user.click(input);
+  await user.paste(value);
+};
+
 describe("QuestionsPage", () => {
   beforeAll(() => {
     global.URL.createObjectURL = jest.fn(() => "mocked-url");
@@ -228,17 +239,17 @@ describe("QuestionsPage", () => {
     renderQuestionsPage(true);
 
     expect(await screen.findByRole("dialog", { name: /Nova questão/i })).toBeInTheDocument();
-    await testUser.type(screen.getByRole("textbox", { name: /Tags/i }), "teste");
+    await fillText(testUser, screen.getByRole("textbox", { name: /Tags/i }), "teste");
     await testUser.selectOptions(screen.getByRole("combobox", { name: /Nível cognitivo \(Bloom\)/i }), "LEMBRAR");
-    await testUser.type(screen.getByRole("textbox", { name: /Região anatômica/i }), "Tórax");
+    await fillText(testUser, screen.getByRole("textbox", { name: /Região anatômica/i }), "Tórax");
     await testUser.click(screen.getByRole("button", { name: /Próximo/i }));
 
     const statement = screen.getByRole("textbox", { name: /Enunciado da questão/i });
     expect(screen.getByRole("button", { name: /Próximo/i })).toBeDisabled();
 
-    await testUser.type(statement, "Pergunta obrigatória?");
+    await fillText(testUser, statement, "Pergunta obrigatória?");
     
-    await testUser.type(screen.getByPlaceholderText(/Explique a resposta correta/i), "Explicação teste");
+    await fillText(testUser, screen.getByPlaceholderText(/Explique a resposta correta/i), "Explicação teste");
     
     await testUser.click(screen.getByRole("button", { name: /Próximo/i }));
 
@@ -282,20 +293,21 @@ describe("QuestionsPage", () => {
 
     expect(await screen.findByRole("dialog", { name: /Nova questão/i })).toBeInTheDocument();
     
-    await testUser.type(screen.getByRole("textbox", { name: /Tags/i }), "teste");
+    await fillText(testUser, screen.getByRole("textbox", { name: /Tags/i }), "teste");
     await testUser.selectOptions(
       screen.getByRole("combobox", { name: /Nível cognitivo \(Bloom\)/i }),
       "ANALISAR",
     );
-    await testUser.type(screen.getByRole("textbox", { name: /Região anatômica/i }), "Tórax");
+    await fillText(testUser, screen.getByRole("textbox", { name: /Região anatômica/i }), "Tórax");
     
     await testUser.click(screen.getByRole("button", { name: /Próximo/i }));
     
-    await testUser.type(
+    await fillText(
+      testUser,
       screen.getByRole("textbox", { name: /Enunciado da questão/i }),
       "Pergunta com classificacao?",
     );
-    await testUser.type(screen.getByPlaceholderText(/Explique a resposta correta/i), "Explicação teste");
+    await fillText(testUser, screen.getByPlaceholderText(/Explique a resposta correta/i), "Explicação teste");
     
     await testUser.click(screen.getByRole("button", { name: /Próximo/i }));
 

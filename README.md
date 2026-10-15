@@ -22,7 +22,7 @@ Esse ambiente contém dados de demonstração, não é produção e pode ser rei
 
 | Ferramenta | Versão | Como instalar |
 |---|---|---|
-| Node.js | ≥ 20 (CI roda em 20; LTS) | https://nodejs.org/ |
+| Node.js | 24.x (CI e Docker; veja `.nvmrc`) | https://nodejs.org/ |
 | npm | vem com o Node | — |
 | Git | qualquer recente | https://git-scm.com/ |
 | GNU Make | opcional | Windows: `choco install make` |
