@@ -110,3 +110,5 @@
 .avatar-botao-primario:hover{background:#0d9488}
 .avatar-botao-primario:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:640px){.avatar-cores{gap:10px}.avatar-cabelo-grid{max-width:100%}.avatar-acoes{flex-wrap:wrap}}
+.profile-level{width:100%;padding:4px 22px 18px}
+.profile-level-total{margin:0 0 10px;text-align:center;font-size:13px;font-weight:700;color:#7C3AED}

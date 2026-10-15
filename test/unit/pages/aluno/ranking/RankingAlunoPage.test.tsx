@@ -18,8 +18,10 @@ jest.mock('../../../../../src/features/ranking', () => ({
     erro,
     mensagemVazio,
     usuarioAtual,
+    rotuloMetrica,
   }: {
-    linhas: Array<{ nome: string }>;
+    rotuloMetrica: string;
+    linhas: Array<{ nome: string; pontuacao?: number; nivel?: number }>;
     carregando: boolean;
     erro: string | null;
     mensagemVazio: string;
@@ -30,6 +32,8 @@ jest.mock('../../../../../src/features/ranking', () => ({
       {erro}
       {!carregando && !erro && linhas.length === 0 ? mensagemVazio : null}
       <span data-testid="linhas">{linhas.map((l) => l.nome).join(',')}</span>
+      <span data-testid="xp">{linhas.map((l) => `${l.pontuacao}/${l.nivel}`).join(',')}</span>
+      <span data-testid="metrica">{rotuloMetrica}</span>
       <span data-testid="atual">{usuarioAtual?.nome ?? ''}</span>
     </div>
   ),
@@ -122,6 +126,24 @@ describe('RankingAlunoPage', () => {
 
     await waitFor(() => expect(geralMock).toHaveBeenCalled());
     expect(await screen.findByTestId('linhas')).toHaveTextContent('Eu,Bob,Cris');
+  });
+
+  test('repassa XP e nivel ao quadro e usa XP como metrica do ranking', async () => {
+    geralMock.mockResolvedValue({
+      dados: [
+        criarEntrada({ usuarioId: 'u1', nome: 'Eu', xpTotal: 320, nivel: 3 }),
+        // Resposta de um backend ainda sem XP: cai para 0 XP no nivel 1.
+        criarEntrada({ usuarioId: 'b', nome: 'Bob', ehUsuarioAtual: false }),
+      ],
+      usuarioAtual: criarEntrada({ xpTotal: 320, nivel: 3 }),
+      totalParticipantes: 2,
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId('xp')).toHaveTextContent('320/3,0/1');
+    expect(screen.getByTestId('metrica')).toHaveTextContent('XP');
+    expect(screen.getByText(/pelo XP acumulado/i)).toBeInTheDocument();
   });
 
   test('mostra erro quando a busca falha', async () => {

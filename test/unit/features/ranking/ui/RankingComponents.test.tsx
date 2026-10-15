@@ -28,6 +28,27 @@ describe('RankingRow', () => {
     expect(screen.getByText('80%')).toBeInTheDocument();
   });
 
+  test('mostra XP como metrica principal e o nivel quando o ranking e por XP', () => {
+    render(
+      <RankingRow
+        linha={criarLinha({ pontuacao: 1320, nivel: 5, totalAcertos: 7 })}
+        rotuloMetrica="XP"
+      />,
+    );
+
+    expect(screen.getByText('1.320')).toBeInTheDocument();
+    expect(screen.getByText('XP')).toBeInTheDocument();
+    expect(screen.getByText('Nível 5')).toBeInTheDocument();
+    // O total de acertos deixa de ser o numero em destaque.
+    expect(screen.queryByText('7')).not.toBeInTheDocument();
+  });
+
+  test('nao mostra nivel nos rankings sem XP (turma e lista)', () => {
+    render(<RankingRow linha={criarLinha()} rotuloMetrica="acertos" />);
+
+    expect(screen.queryByText(/Nível/)).not.toBeInTheDocument();
+  });
+
   test('destaca o usuario atual e usa o detalhe quando nao ha nickname', () => {
     render(
       <RankingRow
@@ -128,5 +149,24 @@ describe('RankingBoard', () => {
     render(<RankingBoard {...props} linhas={linhas} usuarioAtual={usuarioAtual} />);
 
     expect(screen.getAllByText('Eu').length).toBe(1);
+  });
+});
+
+describe('PodiumRanking por XP', () => {
+  test('mostra XP e nivel de cada degrau', () => {
+    render(
+      <PodiumRanking
+        linhas={[
+          criarLinha({ posicao: 1, id: 'a', nome: 'Ana', pontuacao: 2500, nivel: 7 }),
+          criarLinha({ posicao: 2, id: 'b', nome: 'Bia', pontuacao: 900, nivel: 4 }),
+        ]}
+        rotuloMetrica="XP"
+      />,
+    );
+
+    expect(screen.getByText('2.500')).toBeInTheDocument();
+    expect(screen.getByText('900')).toBeInTheDocument();
+    expect(screen.getByText('Nível 7')).toBeInTheDocument();
+    expect(screen.getByText('Nível 4')).toBeInTheDocument();
   });
 });

@@ -8,6 +8,8 @@ export type EntradaRanking = {
   nickname: string | null;
   curso: string | null;
   semestre: string | null;
+  xpTotal: number;
+  nivel: number;
   totalAcertos: number;
   totalRespondidas: number;
   taxaAcerto: number;
@@ -68,6 +70,10 @@ export type OpcaoListaTurma = {
 /**
  * Modelo unificado consumido pelos componentes visuais de ranking, para que
  * o podio e a lista funcionem tanto no lado do aluno quanto do professor.
+ *
+ * `pontuacao` e o valor exibido como metrica principal (XP no ranking de
+ * alunos); quando ausente, os componentes mostram o total de acertos, como nos
+ * rankings de turma e de lista. `nivel` so existe no ranking por XP.
  */
 export type LinhaRanking = {
   posicao: number;
@@ -77,6 +83,8 @@ export type LinhaRanking = {
   detalhe: string | null;
   totalAcertos: number;
   taxaAcerto: number;
+  pontuacao?: number;
+  nivel?: number;
   destaque: boolean;
   cosmeticos: SlotsCosmeticos;
 };

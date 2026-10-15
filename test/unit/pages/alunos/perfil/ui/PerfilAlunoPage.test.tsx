@@ -60,6 +60,33 @@ test('shows the real profile information and dashboard values', async () => {
   expect(screen.getByRole('heading', { name: 'Conquistas em destaque' })).toBeInTheDocument();
 });
 
+test('shows the level, accumulated XP and progress bar to the next level', async () => {
+  dashboard.mockImplementation((url: string) => {
+    if (url === '/quiz/progresso') {
+      return Promise.resolve({
+        data: { xpTotal: 1150, nivel: 5, proximoNivel: 6, xpNoNivel: 150, xpNecessarioNoNivel: 500, xpFaltante: 350, percentual: 30 },
+      });
+    }
+    if (url === '/dashboardAluno') return Promise.resolve({ data: { totalRespondidas: 4000, totalAcertos: 3108, taxaAcerto: 70 } });
+    return Promise.resolve({ data: [] });
+  });
+
+  renderRoutes();
+
+  expect(await screen.findByText('Nível 5')).toBeInTheDocument();
+  expect(screen.getByText('1.150 XP acumulados')).toBeInTheDocument();
+  expect(screen.getByText('150 / 500 XP')).toBeInTheDocument();
+  expect(screen.getByText('Faltam 350 XP para o nível 6')).toBeInTheDocument();
+  expect(screen.getByRole('progressbar', { name: 'Progresso para o nível 6' })).toHaveAttribute('aria-valuenow', '30');
+});
+
+test('hides the level block when the progress cannot be loaded', async () => {
+  renderRoutes();
+
+  await waitFor(() => expect(screen.getByText('3.108')).toBeInTheDocument());
+  expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+});
+
 test('opens the avatar page from Meu avatar and returns to profile', async () => {
   const user = userEvent.setup();
   renderRoutes();
