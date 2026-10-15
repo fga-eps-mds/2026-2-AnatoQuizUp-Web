@@ -1,4 +1,3 @@
-"""Contract tests: no real API calls, tokens, releases or publication."""
 import importlib.util
 import json
 import os
