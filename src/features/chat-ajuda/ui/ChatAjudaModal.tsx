@@ -7,6 +7,7 @@ import { Loader2, MessageCircleQuestion, SendHorizontal, X } from 'lucide-react'
 import { buscarDicaAjuda, enviarPerguntaAjuda, type ContextoQuestaoAjuda } from '../chatAjudaService';
 
 type TrocaChat = {
+  id: string;
   pergunta: string;
   resposta: string;
 };
@@ -72,7 +73,7 @@ export const ChatAjudaModal = ({ onClose, questaoAtual }: ChatAjudaModalProps) =
 
     try {
       const resposta = await enviarPerguntaAjuda(pergunta, questaoAtual);
-      setHistorico((atual) => [...atual, { pergunta, resposta }]);
+      setHistorico((atual) => [...atual, { id: crypto.randomUUID(), pergunta, resposta }]);
       setPerguntaAtual('');
     } catch (error) {
       setErroPergunta((error as Error).message);
@@ -134,8 +135,8 @@ export const ChatAjudaModal = ({ onClose, questaoAtual }: ChatAjudaModalProps) =
 
           {historico.length > 0 && (
             <ul className="mt-4 flex flex-col gap-3">
-              {historico.map((troca, indice) => (
-                <li key={indice} className="flex flex-col gap-1.5">
+              {historico.map((troca) => (
+                <li key={troca.id} className="flex flex-col gap-1.5">
                   <p className="self-end rounded-lg bg-[#0D9488] px-3 py-2 text-sm font-medium text-white">
                     {troca.pergunta}
                   </p>
@@ -161,7 +162,7 @@ export const ChatAjudaModal = ({ onClose, questaoAtual }: ChatAjudaModalProps) =
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                handleEnviarPergunta();
+                void handleEnviarPergunta();
               }
             }}
             placeholder="Pergunte algo sobre o conteudo..."
