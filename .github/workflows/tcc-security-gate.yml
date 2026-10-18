@@ -264,7 +264,7 @@ jobs:
             quiz-service:
               build:
                 context: ./quiz-service
-              command: sh -c "npx prisma migrate deploy && node dist/prisma/seed.js && node dist/src/server.js"
+                            command: sh -c "npx prisma migrate deploy && npm run prisma:seed:catalogo:prod && node dist/src/server.js"
               environment:
                 NODE_ENV: production
                 PORT: "3334"
