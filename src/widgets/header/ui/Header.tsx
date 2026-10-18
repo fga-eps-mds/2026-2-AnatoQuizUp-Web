@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { User } from "../../../entities/user/model/types";
-import { Home, LogOut, Coins, Menu, Users, X, Newspaper, BookOpen, List, Calendar, PieChart, ChevronRight, ShoppingBag, Trophy, Medal, UserRound, Star } from "lucide-react";
+import { Home, LogOut, Coins, Menu, Users, X, Newspaper, BookOpen, List, Calendar, PieChart, ChevronRight, ShoppingBag, Trophy, Medal, UserRound, Star, Stethoscope } from "lucide-react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
@@ -131,6 +131,14 @@ export const Header = ({ previewUser }: { previewUser?: User } = {}) => {
       icon: UserRound,
       onSelect: () => navigate("/aluno/perfil/avatar"),
       isActive: location.pathname.startsWith("/aluno/perfil/avatar"),
+    };
+
+    const studentOsceItem: NavItem = {
+      key: "aluno-osce",
+      label: "Simulação OSCE",
+      icon: Stethoscope,
+      onSelect: () => navigate("/aluno/osce"),
+      isActive: location.pathname.startsWith("/aluno/osce"),
     };
 
     const turmasItem: NavItem = {
@@ -259,6 +267,7 @@ export const Header = ({ previewUser }: { previewUser?: User } = {}) => {
         return [
           homeItem,
           studentQuestaoItem,
+          studentOsceItem,
           studentDashboardItem,
           minhasTurmasAlunoItem,
           studentAmigosItem,
