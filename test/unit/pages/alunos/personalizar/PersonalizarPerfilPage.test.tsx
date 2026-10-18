@@ -33,6 +33,10 @@ jest.mock('../../../../../src/shared/api/httpClient', () => ({
     patch: jest.fn(),
   },
 }));
+jest.mock('../../../../../src/shared/avatar/avatarApi', () => ({
+  buscarAparenciaRemota: jest.fn().mockResolvedValue({ corCerebro: 'rosa', cabelo: null, acessorio: null }),
+  salvarAparenciaRemota: jest.fn(),
+}));
 const mockedHttpClient = jest.mocked(httpClient);
 
 const renderWithProviders = (ui: React.ReactElement) => {

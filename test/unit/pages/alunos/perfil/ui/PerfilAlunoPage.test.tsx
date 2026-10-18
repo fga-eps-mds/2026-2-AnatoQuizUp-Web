@@ -11,6 +11,10 @@ import { AvatarPage } from '../../../../../../src/pages/aluno/avatar/AvatarPage'
 jest.mock('../../../../../../src/app/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('../../../../../../src/features/ranking', () => ({ obterRankingGeral: jest.fn() }));
 jest.mock('../../../../../../src/shared/api/httpClient', () => ({ httpClient: { get: jest.fn() } }));
+jest.mock('../../../../../../src/shared/avatar/avatarApi', () => ({
+  buscarAparenciaRemota: jest.fn().mockResolvedValue({ corCerebro: 'rosa', cabelo: null, acessorio: null }),
+  salvarAparenciaRemota: jest.fn(),
+}));
 
 const auth = useAuth as jest.Mock;
 const dashboard = httpClient.get as jest.Mock;

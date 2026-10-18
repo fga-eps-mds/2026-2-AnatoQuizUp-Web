@@ -1,8 +1,26 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
+import { buscarAparenciaRemota } from './avatarApi';
 import { APARENCIA_PADRAO, HUE_ROTATE_COR, type AparenciaAvatar } from './aparencia';
 
 const EVENTO = 'anatoquizup:avatar-atualizado';
 const chaveAvatar = (id: string) => `anatoquizup:avatar:${id}`;
+const requisicoes = new Map<string, Promise<void>>();
+const versoes = new Map<string, number>();
+
+export const sincronizarAparencia = (id: string) => {
+  const existente = requisicoes.get(id);
+  if (existente) return existente;
+  const versao = versoes.get(id) ?? 0;
+  const requisicao = buscarAparenciaRemota(id)
+    .then((aparencia) => {
+      if ((versoes.get(id) ?? 0) === versao && JSON.stringify(carregarAparencia(id)) !== JSON.stringify(aparencia)) {
+        salvarAparencia(id, aparencia);
+      }
+    })
+    .catch(() => { requisicoes.delete(id); });
+  requisicoes.set(id, requisicao);
+  return requisicao;
+};
 
 const lerRegistro = (id?: string) => {
   try {
@@ -31,6 +49,7 @@ export const carregarAparencia = (id?: string): AparenciaAvatar => {
 };
 
 export const salvarAparencia = (id: string, aparencia: AparenciaAvatar | null) => {
+  versoes.set(id, (versoes.get(id) ?? 0) + 1);
   if (aparencia) localStorage.setItem(chaveAvatar(id), JSON.stringify(aparencia));
   else localStorage.removeItem(chaveAvatar(id));
   window.dispatchEvent(new Event(EVENTO));
@@ -47,5 +66,8 @@ const subscribe = (notificar: () => void) => {
 
 export const useAparenciaAvatar = (id?: string) => {
   useSyncExternalStore(subscribe, () => lerRegistro(id), () => null);
+  useEffect(() => {
+    if (id) void sincronizarAparencia(id);
+  }, [id]);
   return carregarAparencia(id);
 };

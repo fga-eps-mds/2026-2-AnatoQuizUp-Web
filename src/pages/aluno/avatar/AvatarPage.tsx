@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pencil, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../../app/providers/AuthProvider';
 import { AvatarCerebro } from '../../../shared/avatar/AvatarCerebro';
+import { buscarAparenciaRemota, salvarAparenciaRemota } from '../../../shared/avatar/avatarApi';
 import { carregarAparencia, salvarAparencia as persistirAparencia } from '../../../shared/avatar/useAparenciaAvatar';
 import { AparenciaPanel } from './AparenciaPanel';
 import { APARENCIA_PADRAO, type AparenciaAvatar } from './aparencia';
@@ -15,6 +16,9 @@ export function AvatarPage() {
   const [isPersonalizando, setIsPersonalizando] = useState(false);
   const [salvo, setSalvo] = useState<AparenciaAvatar>(APARENCIA_PADRAO);
   const [rascunho, setRascunho] = useState<AparenciaAvatar>(APARENCIA_PADRAO);
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const userId = user?.id;
 
   // Carrega a aparencia salva assim que o usuario autenticado fica disponivel.
   // Ajustado durante a renderizacao (em vez de useEffect) para nao disparar um
@@ -25,25 +29,60 @@ export function AvatarPage() {
     const aparencia = carregarAparencia(user.id);
     setSalvo(aparencia);
     setRascunho(aparencia);
+    setCarregando(true);
   }
+
+  useEffect(() => {
+    if (!userId) return;
+    let ativo = true;
+    const id = userId;
+    void buscarAparenciaRemota(id, true).then((aparencia) => {
+      if (!ativo) return;
+      persistirAparencia(id, aparencia);
+      setSalvo(aparencia);
+      setRascunho(aparencia);
+    }).catch(() => {
+      if (ativo) setMessage('Não foi possível carregar o avatar. Tente novamente mais tarde.');
+    }).finally(() => {
+      if (ativo) setCarregando(false);
+    });
+    return () => { ativo = false; };
+  }, [userId]);
 
   if (!user) return null;
 
   const temAlteracoes = JSON.stringify(rascunho) !== JSON.stringify(salvo);
 
-  const restore = () => {
-    // Limpa escolhas da antiga prévia local para que o cérebro padrão volte a aparecer.
-    persistirAparencia(user.id, null);
-    setSalvo(APARENCIA_PADRAO);
-    setRascunho(APARENCIA_PADRAO);
-    setMessage('Avatar restaurado ao padrão.');
+  const restore = async () => {
+    setSalvando(true);
+    setMessage('');
+    try {
+      const aparencia = await salvarAparenciaRemota(APARENCIA_PADRAO);
+      persistirAparencia(user.id, aparencia);
+      setSalvo(aparencia);
+      setRascunho(aparencia);
+      setMessage('Avatar restaurado ao padrão.');
+    } catch {
+      setMessage('Não foi possível restaurar o avatar.');
+    } finally {
+      setSalvando(false);
+    }
   };
 
-  const salvarAparencia = () => {
-    persistirAparencia(user.id, rascunho);
-    setSalvo(rascunho);
-    setMessage('Alterações salvas.');
-    setIsPersonalizando(false);
+  const salvarAparencia = async () => {
+    setSalvando(true);
+    setMessage('');
+    try {
+      const aparencia = await salvarAparenciaRemota(rascunho);
+      persistirAparencia(user.id, aparencia);
+      setSalvo(aparencia);
+      setMessage('Alterações salvas.');
+      setIsPersonalizando(false);
+    } catch {
+      setMessage('Não foi possível salvar o avatar.');
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const cancelarAparencia = () => {
@@ -77,6 +116,7 @@ export function AvatarPage() {
                 aria-label="Editar aparência do avatar"
                 aria-expanded={isPersonalizando}
                 onClick={() => setIsPersonalizando(true)}
+                disabled={carregando || salvando}
               >
                 <Pencil size={20} aria-hidden="true" />
               </button>
@@ -85,7 +125,7 @@ export function AvatarPage() {
               <div className="avatar-only-shadow" />
               <AvatarCerebro aparencia={rascunho} className="h-full w-full" />
             </div>
-            <button className="avatar-only-restore" type="button" onClick={restore}>
+            <button className="avatar-only-restore" type="button" onClick={() => void restore()} disabled={carregando || salvando}>
               <RotateCcw size={22} aria-hidden="true" />
               Restaurar alterações
             </button>
@@ -97,9 +137,9 @@ export function AvatarPage() {
             <AparenciaPanel
               valor={rascunho}
               aoMudar={setRascunho}
-              aoSalvar={salvarAparencia}
+              aoSalvar={() => void salvarAparencia()}
               aoCancelar={cancelarAparencia}
-              temAlteracoes={temAlteracoes}
+              temAlteracoes={temAlteracoes && !salvando}
             />
           </div>
         )}

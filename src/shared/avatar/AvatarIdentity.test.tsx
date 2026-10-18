@@ -1,18 +1,22 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AvatarCosmetico } from '../ui/profile-identity-card';
 import { AvatarPage } from '../../pages/aluno/avatar/AvatarPage';
 import { useAuth } from '../../app/providers/AuthProvider';
 import { carregarAparencia, salvarAparencia } from './useAparenciaAvatar';
 import { APARENCIA_PADRAO } from './aparencia';
+import { buscarAparenciaRemota, salvarAparenciaRemota } from './avatarApi';
 
 jest.mock('../../app/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
+jest.mock('./avatarApi', () => ({ buscarAparenciaRemota: jest.fn(), salvarAparenciaRemota: jest.fn() }));
 
 const identidade = { nome: 'Letícia', usuarioId: 'aluna-1' };
 const avatar = () => screen.getByRole('img', { name: 'Avatar de Letícia' });
 
 beforeEach(() => {
   localStorage.clear();
+  jest.mocked(buscarAparenciaRemota).mockResolvedValue(APARENCIA_PADRAO);
+  jest.mocked(salvarAparenciaRemota).mockImplementation(async (aparencia) => aparencia);
   jest.mocked(useAuth).mockReturnValue({ user: { id: 'aluna-1', name: 'Letícia' } } as ReturnType<typeof useAuth>);
 });
 
@@ -21,22 +25,30 @@ it('exibe o cérebro padrão para aluno novo', () => {
   expect(avatar()).toHaveStyle({ filter: 'hue-rotate(0deg)' });
 });
 
-it('atualiza todas as representações somente ao salvar e restaura o padrão', () => {
+it('carrega a aparência de outro aluno a partir do backend', async () => {
+  jest.mocked(buscarAparenciaRemota).mockResolvedValueOnce({ corCerebro: 'roxo', cabelo: 'loiro', acessorio: null });
+  render(<AvatarCosmetico identidade={{ nome: 'Outro', usuarioId: 'aluno-remoto' }} cosmeticos={{}} tamanho="sm" />);
+  await waitFor(() => expect(screen.getByRole('img', { name: 'Avatar de Outro' })).toHaveStyle({ filter: 'hue-rotate(300deg)' }));
+  expect(buscarAparenciaRemota).toHaveBeenCalledWith('aluno-remoto');
+});
+
+it('atualiza todas as representações somente ao salvar e restaura o padrão', async () => {
   render(<MemoryRouter>
     <AvatarPage />
     <AvatarCosmetico identidade={identidade} cosmeticos={{}} tamanho="sm" />
   </MemoryRouter>);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Editar aparência do avatar' })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: 'Editar aparência do avatar' }));
   fireEvent.click(screen.getByRole('button', { name: 'Azul' }));
   expect(avatar()).toHaveStyle({ filter: 'hue-rotate(0deg)' });
   fireEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }));
-  expect(avatar()).toHaveStyle({ filter: 'hue-rotate(235deg)' });
+  await waitFor(() => expect(avatar()).toHaveStyle({ filter: 'hue-rotate(235deg)' }));
   fireEvent.click(screen.getByRole('button', { name: 'Editar aparência do avatar' }));
   fireEvent.click(screen.getByRole('button', { name: 'Verde' }));
   fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
   expect(avatar()).toHaveStyle({ filter: 'hue-rotate(235deg)' });
   fireEvent.click(screen.getByRole('button', { name: 'Restaurar alterações' }));
-  expect(avatar()).toHaveStyle({ filter: 'hue-rotate(0deg)' });
+  await waitFor(() => expect(avatar()).toHaveStyle({ filter: 'hue-rotate(0deg)' }));
 });
 
 it('mantém aparência após remontagem e isola usuários com o mesmo nome', () => {
