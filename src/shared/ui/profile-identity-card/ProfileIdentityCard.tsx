@@ -1,4 +1,4 @@
-﻿﻿/**
+﻿/**
  * Cartao de identidade do perfil, reutilizado em varias telas (perfil, ranking, etc.).
  * Compoe avatar + cosmeticos equipados (moldura, icone, titulo, plano de fundo) e,
  * no modo editavel, exibe e-mail/saldo e botoes de personalizar/editar.

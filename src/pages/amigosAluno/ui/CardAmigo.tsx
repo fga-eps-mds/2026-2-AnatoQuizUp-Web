@@ -1,4 +1,4 @@
-﻿﻿import { ChevronRight } from 'lucide-react';
+﻿import { ChevronRight } from 'lucide-react';
 import type { MouseEvent } from 'react';
 
 import { AchievementMedal, type ConquistaDestacada } from '../../../features/achievements';
