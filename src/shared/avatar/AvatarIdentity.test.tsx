@@ -59,7 +59,9 @@ it('sincroniza mudanças de outra aba', () => {
   render(<AvatarCosmetico identidade={identidade} cosmeticos={{}} tamanho="sm" />);
   act(() => {
     localStorage.setItem('anatoquizup:avatar:aluna-1', JSON.stringify({ corCerebro: 'verde' }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'anatoquizup:avatar:aluna-1' }));
+    const storageEvent = new Event('storage');
+    Object.defineProperty(storageEvent, 'key', { value: 'anatoquizup:avatar:aluna-1' });
+    window.dispatchEvent(storageEvent);
   });
   expect(avatar()).toHaveStyle({ filter: 'hue-rotate(170deg)' });
 });
