@@ -1,4 +1,4 @@
-﻿import { ChevronRight } from 'lucide-react';
+﻿﻿import { ChevronRight } from 'lucide-react';
 import type { MouseEvent } from 'react';
 
 import { AchievementMedal, type ConquistaDestacada } from '../../../features/achievements';
@@ -64,7 +64,7 @@ export const CardAmigo = ({
         style={{ background: fundo?.valor ?? FUNDO_PADRAO }}
       >
         <AvatarCosmetico
-          identidade={{ nome: amigo.nome, nickname: amigo.nickname }}
+          identidade={{ nome: amigo.nome, usuarioId: amigo.id, nickname: amigo.nickname }}
           cosmeticos={cosmeticos}
           tamanho="md"
         />

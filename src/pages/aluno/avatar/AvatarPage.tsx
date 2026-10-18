@@ -2,28 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pencil, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../../app/providers/AuthProvider';
-import avatarBase from '../../../shared/assets/avatar/avatar-base.png';
-import { AccessoryThumb, AparenciaPanel, HairThumb } from './AparenciaPanel';
-import { APARENCIA_PADRAO, HUE_ROTATE_COR, type AparenciaAvatar } from './aparencia';
+import { AvatarCerebro } from '../../../shared/avatar/AvatarCerebro';
+import { carregarAparencia, salvarAparencia as persistirAparencia } from '../../../shared/avatar/useAparenciaAvatar';
+import { AparenciaPanel } from './AparenciaPanel';
+import { APARENCIA_PADRAO, type AparenciaAvatar } from './aparencia';
 import '../perfil/ui/profile.css';
-
-const chaveAvatar = (userId: string) => `anatoquizup:avatar:${userId}`;
-
-/** Le a aparencia salva localmente; sem registro ou em caso de erro, usa o padrao. */
-function carregarAparencia(userId: string): AparenciaAvatar {
-  try {
-    const bruto = localStorage.getItem(chaveAvatar(userId));
-    if (!bruto) return APARENCIA_PADRAO;
-    const dados = JSON.parse(bruto) as Partial<AparenciaAvatar>;
-    return {
-      corCerebro: dados.corCerebro ?? APARENCIA_PADRAO.corCerebro,
-      cabelo: dados.cabelo ?? null,
-      acessorio: dados.acessorio ?? null,
-    };
-  } catch {
-    return APARENCIA_PADRAO;
-  }
-}
 
 /** Primeira etapa do avatar: apresentação do cérebro padrão + personalização de aparência. */
 export function AvatarPage() {
@@ -50,14 +33,14 @@ export function AvatarPage() {
 
   const restore = () => {
     // Limpa escolhas da antiga prévia local para que o cérebro padrão volte a aparecer.
-    localStorage.removeItem(chaveAvatar(user.id));
+    persistirAparencia(user.id, null);
     setSalvo(APARENCIA_PADRAO);
     setRascunho(APARENCIA_PADRAO);
     setMessage('Avatar restaurado ao padrão.');
   };
 
   const salvarAparencia = () => {
-    localStorage.setItem(chaveAvatar(user.id), JSON.stringify(rascunho));
+    persistirAparencia(user.id, rascunho);
     setSalvo(rascunho);
     setMessage('Alterações salvas.');
     setIsPersonalizando(false);
@@ -100,25 +83,7 @@ export function AvatarPage() {
             </div>
             <div className="avatar-only-circle">
               <div className="avatar-only-shadow" />
-              <img
-                src={avatarBase}
-                alt="Cérebro do AnatoQuizUp"
-                style={{ filter: `hue-rotate(${HUE_ROTATE_COR[rascunho.corCerebro]}deg)` }}
-              />
-              {rascunho.cabelo && (
-                <div className={`avatar-cabelo-overlay cabelo-${rascunho.cabelo}`}>
-                  <HairThumb estilo={rascunho.cabelo} />
-                </div>
-              )}
-              {rascunho.acessorio && (
-                <div
-                  className={`avatar-cabelo-overlay acessorio-${rascunho.acessorio}${
-                    rascunho.cabelo ? ` com-cabelo-${rascunho.cabelo}` : ''
-                  }`}
-                >
-                  <AccessoryThumb estilo={rascunho.acessorio} />
-                </div>
-              )}
+              <AvatarCerebro aparencia={rascunho} className="h-full w-full" />
             </div>
             <button className="avatar-only-restore" type="button" onClick={restore}>
               <RotateCcw size={22} aria-hidden="true" />

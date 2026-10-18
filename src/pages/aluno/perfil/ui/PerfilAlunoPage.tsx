@@ -13,7 +13,6 @@ import { converterEquipadosParaSlots, useEquippedCosmeticsStore } from '../../..
 import { useStudentCoinsStore } from '../../../../features/student-coins/model/useStudentCoinsStore';
 import { AvatarCosmetico } from '../../../../shared/ui/profile-identity-card';
 import { httpClient } from '../../../../shared/api/httpClient';
-import { montarIniciais } from '../../../../shared/utils/iniciais';
 import type { DashboardAlunoResponse } from '../../../dashboardAluno/types';
 import './profile.css';
 
@@ -172,9 +171,7 @@ export const PerfilAlunoPage = ({ previewUser }: { previewUser?: User } = {}) =>
         <section className="profile-identity-card" aria-label="Identidade do aluno">
           {cosmeticos.PLANO_FUNDO?.valor && <div className="profile-identity-accent" style={{ background: cosmeticos.PLANO_FUNDO.valor }} />}
           <button className="profile-edit-button" type="button" aria-label="Editar informações" onClick={() => navigate('/aluno/perfil/editar')}><Pencil size={20} /></button>
-          {profilePicture || cosmeticos.MOLDURA
-            ? <div className="profile-avatar-wrap"><AvatarCosmetico identidade={{ nome: user.name }} cosmeticos={cosmeticos} tamanho="lg" /><span className="profile-presence" /></div>
-            : <div className="profile-initials">{montarIniciais(user.name)}<span className="profile-presence" /></div>}
+          <div className="profile-avatar-wrap"><AvatarCosmetico identidade={{ nome: user.name, usuarioId: user.id, preferirAvatarCerebro: true }} cosmeticos={cosmeticos} tamanho="lg" /><span className="profile-presence" /></div>
           <h3>Aluno</h3>
           {cosmeticos.TITULO && <span className="profile-equipped-title">{cosmeticos.TITULO.nome}</span>}
           <p className="profile-atp"><Coins size={17} aria-hidden="true" />{saldoMoedas.toLocaleString('pt-BR')} ATP</p>

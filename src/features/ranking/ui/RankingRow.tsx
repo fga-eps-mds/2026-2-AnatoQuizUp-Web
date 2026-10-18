@@ -39,7 +39,7 @@ export const RankingRow = ({ linha, rotuloMetrica }: RankingRowProps) => {
       </span>
 
       <div className="shrink-0">
-        <AvatarCosmetico identidade={{ nome: linha.nome }} cosmeticos={linha.cosmeticos} tamanho="sm" />
+        <AvatarCosmetico identidade={{ nome: linha.nome, usuarioId: linha.id, preferirAvatarCerebro: linha.destaque }} cosmeticos={linha.cosmeticos} tamanho="sm" />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">

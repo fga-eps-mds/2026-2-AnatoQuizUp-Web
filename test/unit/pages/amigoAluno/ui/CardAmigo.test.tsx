@@ -1,4 +1,4 @@
-﻿import { render, screen } from '@testing-library/react';
+﻿﻿import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { ResumoAmizade } from '../../../../../src/features/friendship';
@@ -171,9 +171,9 @@ describe('CardAmigo', () => {
     expect(screen.getByRole('img', { name: 'Avatar Especial' })).toBeInTheDocument();
   });
 
-  it('exibe iniciais como fallback quando sem cosmeticos', () => {
+  it('exibe cérebro padrão quando sem cosméticos', () => {
     renderCard();
 
-    expect(screen.getByText('AP')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Avatar de Ana Paula' })).toBeInTheDocument();
   });
 });

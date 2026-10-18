@@ -55,7 +55,7 @@ const Degrau = ({
         {ehPrimeiro && <Crown className="text-[#F59E0B]" size={24} aria-hidden="true" />}
         <div className={`rounded-full ring-2 ring-offset-2 ${config.anel}`}>
           <AvatarCosmetico
-            identidade={{ nome: linha.nome }}
+            identidade={{ nome: linha.nome, usuarioId: linha.id, preferirAvatarCerebro: linha.destaque }}
             cosmeticos={linha.cosmeticos}
             tamanho="sm"
           />

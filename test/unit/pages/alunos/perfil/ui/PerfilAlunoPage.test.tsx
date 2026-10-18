@@ -45,7 +45,7 @@ beforeEach(() => {
 test('shows the real profile information and dashboard values', async () => {
   renderRoutes();
   expect(screen.getByRole('heading', { name: 'Olá, Leticia' })).toBeInTheDocument();
-  expect(screen.getByText('LM')).toBeInTheDocument();
+  expect(screen.getByRole('img', { name: 'Avatar de Leticia Martins' })).toBeInTheDocument();
   expect(screen.getByText('16/02/2002')).toBeInTheDocument();
   expect(screen.getByText('9º semestre')).toBeInTheDocument();
   expect(screen.getByText('05/04/2025')).toBeInTheDocument();

@@ -132,6 +132,7 @@ export const AmigoPerfilPage = () => {
           <>
             <ProfileIdentityCard
               identidade={{
+                usuarioId: perfil.usuario.id,
                 nome: perfil.usuario.nome,
                 nickname: perfil.usuario.nickname,
                 curso: perfil.usuario.curso,
