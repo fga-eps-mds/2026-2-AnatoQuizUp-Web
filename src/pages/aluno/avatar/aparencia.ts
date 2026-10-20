@@ -5,19 +5,28 @@
 
 export type CorCerebro = 'rosa' | 'roxo' | 'azul' | 'verde' | 'laranja' | 'amarelo';
 export type EstiloCabelo = 'loiro' | 'cacheado' | 'moicano';
-// Acessorios liberados como base (issue #34); os demais itens da loja entram depois.
+// Acessorios de cabeca liberados como base (issue #34); os demais itens da loja entram depois.
 export type EstiloAcessorio = 'coroa' | 'oculos' | 'chapeu-formatura';
+// Luvas: tambem entram na aba Acessorios, mas num slot proprio (independente de
+// EstiloAcessorio) para poderem ser combinadas com coroa/oculos/chapeu ao mesmo tempo.
+export type EstiloLuva = 'luva-boxe' | 'luva-cirurgica' | 'luva-la';
+// Calcados liberados como base (issue #33); os demais itens da loja entram depois.
+export type EstiloCalcado = 'sapato-plantao' | 'tenis-cano-alto' | 'tenis-esportivo';
 
 export type AparenciaAvatar = {
   corCerebro: CorCerebro;
   cabelo: EstiloCabelo | null;
   acessorio: EstiloAcessorio | null;
+  luva: EstiloLuva | null;
+  calcado: EstiloCalcado | null;
 };
 
 export const APARENCIA_PADRAO: AparenciaAvatar = {
   corCerebro: 'rosa',
   cabelo: null,
   acessorio: null,
+  luva: null,
+  calcado: null,
 };
 
 // ponytail: recolore a arte base (rosa) girando o matiz via CSS filter, em vez de

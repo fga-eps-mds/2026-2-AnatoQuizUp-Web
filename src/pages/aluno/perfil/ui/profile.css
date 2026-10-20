@@ -88,6 +88,15 @@
 .avatar-cabelo-overlay.acessorio-chapeu-formatura.com-cabelo-loiro,
 .avatar-cabelo-overlay.acessorio-chapeu-formatura.com-cabelo-cacheado,
 .avatar-cabelo-overlay.acessorio-chapeu-formatura.com-cabelo-moicano{top:10%}
+/* Luvas: ancorado pelo TOPO (punho) contra o punho real da luva original, com 1.5pt de
+   sobreposicao para a luva comecar um pouco antes do pulso e deixar o braco visivel. */
+.avatar-cabelo-overlay.luva-luva-boxe{top:68.76%;left:50.12%;width:71.46%;z-index:3}
+.avatar-cabelo-overlay.luva-luva-cirurgica{top:70.37%;left:50.12%;width:70.65%;z-index:3}
+.avatar-cabelo-overlay.luva-luva-la{top:68.72%;left:50.12%;width:70.57%;z-index:3}
+/* Calcados: ancorado pela sola (base) contra a sola da bota original, centralizado. */
+.avatar-cabelo-overlay.calcado-sapato-plantao{top:76.07%;left:50.12%;width:39.80%;z-index:1}
+.avatar-cabelo-overlay.calcado-tenis-cano-alto{top:74.96%;left:50.12%;width:46.48%;z-index:1}
+.avatar-cabelo-overlay.calcado-tenis-esportivo{top:75.79%;left:50.12%;width:40.91%;z-index:1}
 .avatar-personalizar-card{border:1px solid #d2d5dc;border-radius:10px;background:#fff;padding:24px 28px}
 .avatar-tabs{display:flex;gap:10px;border-bottom:1px solid #e0e4e8;margin-bottom:22px}
 .avatar-tabs button{border:0;background:transparent;padding:10px 6px;font-weight:700;color:#7d879d;cursor:pointer;border-bottom:2px solid transparent}

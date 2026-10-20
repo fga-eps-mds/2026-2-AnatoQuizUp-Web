@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Pencil, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../../app/providers/AuthProvider';
 import avatarBase from '../../../shared/assets/avatar/avatar-base.png';
-import { AccessoryThumb, AparenciaPanel, HairThumb } from './AparenciaPanel';
+import { AccessoryThumb, AparenciaPanel, CalcadoThumb, HairThumb, LuvaThumb } from './AparenciaPanel';
 import { APARENCIA_PADRAO, HUE_ROTATE_COR, type AparenciaAvatar } from './aparencia';
 import '../perfil/ui/profile.css';
 
@@ -19,6 +19,8 @@ function carregarAparencia(userId: string): AparenciaAvatar {
       corCerebro: dados.corCerebro ?? APARENCIA_PADRAO.corCerebro,
       cabelo: dados.cabelo ?? null,
       acessorio: dados.acessorio ?? null,
+      luva: dados.luva ?? null,
+      calcado: dados.calcado ?? null,
     };
   } catch {
     return APARENCIA_PADRAO;
@@ -117,6 +119,16 @@ export function AvatarPage() {
                   }`}
                 >
                   <AccessoryThumb estilo={rascunho.acessorio} />
+                </div>
+              )}
+              {rascunho.luva && (
+                <div className={`avatar-cabelo-overlay luva-${rascunho.luva}`}>
+                  <LuvaThumb estilo={rascunho.luva} />
+                </div>
+              )}
+              {rascunho.calcado && (
+                <div className={`avatar-cabelo-overlay calcado-${rascunho.calcado}`}>
+                  <CalcadoThumb estilo={rascunho.calcado} />
                 </div>
               )}
             </div>
