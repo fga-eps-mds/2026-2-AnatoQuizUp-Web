@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -7,6 +8,10 @@ jest.mock('../../../../../src/app/providers/AuthProvider', () => ({
 
 jest.mock('../../../../../src/features/profile-cosmetics', () => ({
   converterItensEquipadosParaSlots: jest.fn(() => ({})),
+}));
+
+jest.mock('../../../../../src/features/progressao/progressaoService', () => ({
+  buscarProgressoXp: jest.fn().mockRejectedValue(new Error('offline')),
 }));
 
 jest.mock('../../../../../src/features/ranking', () => ({
@@ -152,5 +157,34 @@ describe('RankingAlunoPage', () => {
     renderPage();
 
     expect(await screen.findByText('falhou ao carregar')).toBeInTheDocument();
+  });
+
+  test('exibe o elo atual, preserva maior elo e navega para Minha progressao e Todos os elos', async () => {
+    geralMock.mockResolvedValue({
+      dados: [criarEntrada({ xpTotal: 1940, nivel: 6, elo: 'R3', totalAcertos: 96, taxaAcerto: 84 })],
+      usuarioAtual: criarEntrada({ xpTotal: 1940, nivel: 6, elo: 'R3', totalAcertos: 96, taxaAcerto: 84 }),
+      totalParticipantes: 5,
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(geralMock).toHaveBeenCalled());
+    expect(await screen.findByText('Seu elo')).toBeInTheDocument();
+    expect(screen.getByText('Seus acertos')).toBeInTheDocument();
+    expect(screen.getByText('Elo atual: R3')).toBeInTheDocument();
+
+    // Abre a visao "Minha progressao" (Tela 2 do Figma).
+    fireEvent.click(screen.getAllByRole('button', { name: 'Minha progressão' })[0]);
+    expect(await screen.findByRole('heading', { name: 'Minha progressão' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Minha progressão de elos' })).toBeInTheDocument();
+
+    // Abre a visao "Todos os elos" (Tela 3 do Figma) pelo botao interno.
+    fireEvent.click(screen.getByRole('button', { name: 'Ver todos os elos' }));
+    expect(await screen.findByRole('heading', { name: 'Todos os elos' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Todos os elos' })).toBeInTheDocument();
+
+    // Volta para a visao principal do ranking.
+    fireEvent.click(screen.getByRole('button', { name: 'Ver ranking' }));
+    expect(await screen.findByRole('heading', { name: 'Ranking' })).toBeInTheDocument();
   });
 });
