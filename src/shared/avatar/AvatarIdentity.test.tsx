@@ -26,7 +26,7 @@ it('exibe o cérebro padrão para aluno novo', () => {
 });
 
 it('carrega a aparência de outro aluno a partir do backend', async () => {
-  jest.mocked(buscarAparenciaRemota).mockResolvedValueOnce({ corCerebro: 'roxo', cabelo: 'loiro', acessorio: null });
+  jest.mocked(buscarAparenciaRemota).mockResolvedValueOnce({ ...APARENCIA_PADRAO, corCerebro: 'roxo', cabelo: 'loiro' });
   render(<AvatarCosmetico identidade={{ nome: 'Outro', usuarioId: 'aluno-remoto' }} cosmeticos={{}} tamanho="sm" />);
   await waitFor(() => expect(screen.getByRole('img', { name: 'Avatar de Outro' })).toHaveStyle({ filter: 'hue-rotate(300deg)' }));
   expect(buscarAparenciaRemota).toHaveBeenCalledWith('aluno-remoto');
@@ -52,7 +52,7 @@ it('atualiza todas as representações somente ao salvar e restaura o padrão', 
 });
 
 it('mantém aparência após remontagem e isola usuários com o mesmo nome', () => {
-  salvarAparencia('aluna-1', { corCerebro: 'roxo', cabelo: 'loiro', acessorio: 'coroa' });
+  salvarAparencia('aluna-1', { ...APARENCIA_PADRAO, corCerebro: 'roxo', cabelo: 'loiro', acessorio: 'coroa' });
   const { unmount } = render(<AvatarCosmetico identidade={identidade} cosmeticos={{}} tamanho="sm" />);
   expect(avatar()).toHaveStyle({ filter: 'hue-rotate(300deg)' });
   unmount();
@@ -81,18 +81,20 @@ it('sincroniza mudanças de outra aba', () => {
 it('usa a mesma aparência no pódio e na lista do ranking', async () => {
   const { RankingRow } = await import('../../features/ranking/ui/RankingRow');
   const { PodiumRanking } = await import('../../features/ranking/ui/PodiumRanking');
-  salvarAparencia('aluna-1', { corCerebro: 'azul', cabelo: 'cacheado', acessorio: 'oculos' });
+  salvarAparencia('aluna-1', { ...APARENCIA_PADRAO, corCerebro: 'azul', cabelo: 'cacheado', acessorio: 'oculos', luva: 'luva-boxe', calcado: 'tenis-esportivo' });
   const linha = {
     posicao: 1, id: 'aluna-1', nome: 'Letícia', nickname: null, detalhe: null,
     totalAcertos: 10, taxaAcerto: 100, destaque: true, cosmeticos: {},
   };
-  render(<>
+  const { container } = render(<>
     <RankingRow linha={linha} rotuloMetrica="XP" />
     <PodiumRanking linhas={[linha]} rotuloMetrica="XP" />
   </>);
   const imagens = screen.getAllByRole('img', { name: 'Avatar de Letícia' });
   expect(imagens).toHaveLength(2);
   imagens.forEach((imagem) => expect(imagem).toHaveStyle({ filter: 'hue-rotate(235deg)' }));
+  expect([...container.querySelectorAll('img[aria-hidden="true"]')].filter((imagem) => imagem.getAttribute('style')?.includes('top: 68.76%'))).toHaveLength(2);
+  expect([...container.querySelectorAll('img[aria-hidden="true"]')].filter((imagem) => imagem.getAttribute('style')?.includes('top: 75.79%'))).toHaveLength(2);
 });
 
 it('usa o cérebro para o próprio aluno mesmo com foto equipada e mantém a moldura', () => {
@@ -104,6 +106,14 @@ it('usa o cérebro para o próprio aluno mesmo com foto equipada e mantém a mol
   expect(avatar()).toBeInTheDocument();
   expect(screen.queryByRole('img', { name: 'Foto antiga' })).not.toBeInTheDocument();
   expect(screen.getByLabelText('Moldura Dourada')).toContainElement(avatar());
+});
+
+it('usa o cérebro também para outros estudantes com foto antiga equipada', () => {
+  render(<AvatarCosmetico identidade={{ nome: 'Outro', usuarioId: 'aluno-2' }}
+    cosmeticos={{ AVATAR: { nome: 'Foto antiga', imagemUrl: '/foto.png' } } as React.ComponentProps<typeof AvatarCosmetico>['cosmeticos']}
+    tamanho="sm" />);
+  expect(screen.getByRole('img', { name: 'Avatar de Outro' })).toBeInTheDocument();
+  expect(screen.queryByRole('img', { name: 'Foto antiga' })).not.toBeInTheDocument();
 });
 
 it('usa o padrão se o armazenamento estiver indisponível', () => {

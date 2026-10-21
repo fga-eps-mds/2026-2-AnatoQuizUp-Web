@@ -4,7 +4,7 @@
  * no modo editavel, exibe e-mail/saldo e botoes de personalizar/editar.
  */
 import { AvatarCerebro } from '../../avatar/AvatarCerebro';
-import { temAparenciaSalva, useAparenciaAvatar } from '../../avatar/useAparenciaAvatar';
+import { useAparenciaAvatar } from '../../avatar/useAparenciaAvatar';
 import { Coins, Mail, Pencil, Plus } from 'lucide-react';
 
 import type { ItemInventario, TipoItemLoja } from '../../../features/loja';
@@ -73,7 +73,7 @@ const Circulo = ({ identidade, cosmeticos, tamanho }: CirculoProps) => {
 
   let conteudo;
 
-  if (identidade.preferirAvatarCerebro || temAparenciaSalva(identidade.usuarioId)) {
+  if (identidade.usuarioId || identidade.preferirAvatarCerebro) {
     conteudo = <AvatarCerebro aparencia={aparencia} nome={identidade.nome} className={dimensao} />;
   } else if (avatar && avatarSrc) {
     conteudo = (

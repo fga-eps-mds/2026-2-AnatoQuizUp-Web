@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { useAuth } from '../../../app/providers/AuthProvider';
 import { AvatarPage } from './AvatarPage';
 import { buscarAparenciaRemota, salvarAparenciaRemota } from '../../../shared/avatar/avatarApi';
+import { APARENCIA_PADRAO } from './aparencia';
 
 jest.mock('../../../app/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('../../../shared/avatar/avatarApi', () => ({ buscarAparenciaRemota: jest.fn(), salvarAparenciaRemota: jest.fn() }));
@@ -13,7 +14,7 @@ const renderPage = () => render(<MemoryRouter><AvatarPage /></MemoryRouter>);
 describe('AvatarPage', () => {
   beforeEach(() => {
     localStorage.clear();
-    jest.mocked(buscarAparenciaRemota).mockResolvedValue({ corCerebro: 'rosa', cabelo: null, acessorio: null });
+    jest.mocked(buscarAparenciaRemota).mockResolvedValue(APARENCIA_PADRAO);
     jest.mocked(salvarAparenciaRemota).mockImplementation(async (aparencia) => aparencia);
     mockedUseAuth.mockReturnValue({
       user: { id: 'user-1', name: 'Aluno Teste' },
@@ -36,12 +37,26 @@ describe('AvatarPage', () => {
     expect(screen.getByRole('button', { name: 'Nenhum' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('mostra a aba Roupas desabilitada (fora de escopo)', async () => {
+  it('permite escolher calçados para o avatar', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Editar aparência do avatar' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Editar aparência do avatar' }));
 
-    expect(screen.getByRole('tab', { name: 'Roupas' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('tab', { name: 'Calçados' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tênis esportivo' }));
+    expect(screen.getByRole('button', { name: 'Tênis esportivo' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeEnabled();
+  });
+
+  it('permite combinar luvas com acessórios de cabeça', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Editar aparência do avatar' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Editar aparência do avatar' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Acessórios' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Coroa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Luva de boxe' }));
+    expect(screen.getByRole('button', { name: 'Coroa' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Luva de boxe' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('a aba Acessórios lista os itens liberados e permite equipar um', async () => {
@@ -83,7 +98,7 @@ describe('AvatarPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Loiro' }));
     fireEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
-    await waitFor(() => expect(salvarAparenciaRemota).toHaveBeenCalledWith({ corCerebro: 'rosa', cabelo: 'loiro', acessorio: null }));
+    await waitFor(() => expect(salvarAparenciaRemota).toHaveBeenCalledWith({ ...APARENCIA_PADRAO, cabelo: 'loiro' }));
     const salvo = JSON.parse(localStorage.getItem('anatoquizup:avatar:user-1') ?? '{}');
     expect(salvo).toMatchObject({ cabelo: 'loiro' });
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Salvar alterações' })).not.toBeInTheDocument());
@@ -91,12 +106,16 @@ describe('AvatarPage', () => {
   });
 
   it('carrega do backend a aparência salva em outra sessão', async () => {
-    jest.mocked(buscarAparenciaRemota).mockResolvedValue({ corCerebro: 'azul', cabelo: 'moicano', acessorio: 'coroa' });
+    jest.mocked(buscarAparenciaRemota).mockResolvedValue({ ...APARENCIA_PADRAO, corCerebro: 'azul', cabelo: 'moicano', acessorio: 'coroa', luva: 'luva-la', calcado: 'tenis-cano-alto' });
     renderPage();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Editar aparência do avatar' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Editar aparência do avatar' }));
     expect(screen.getByRole('button', { name: 'Azul' })).toHaveClass('selecionado');
     expect(screen.getByRole('button', { name: 'Moicano' })).toHaveClass('selecionado');
+    fireEvent.click(screen.getByRole('tab', { name: 'Acessórios' }));
+    expect(screen.getByRole('button', { name: 'Luva de lã' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'Calçados' }));
+    expect(screen.getByRole('button', { name: 'Tênis cano alto' })).toHaveAttribute('aria-pressed', 'true');
     expect(buscarAparenciaRemota).toHaveBeenCalledWith('user-1', true);
   });
 
@@ -108,7 +127,7 @@ describe('AvatarPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Azul' }));
     fireEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }));
     await screen.findByText('Não foi possível salvar o avatar.');
-    expect(localStorage.getItem('anatoquizup:avatar:user-1')).toEqual(JSON.stringify({ corCerebro: 'rosa', cabelo: null, acessorio: null }));
+    expect(localStorage.getItem('anatoquizup:avatar:user-1')).toEqual(JSON.stringify(APARENCIA_PADRAO));
   });
 
   it('descarta o rascunho ao cancelar, voltando ao que estava salvo', async () => {
@@ -129,7 +148,7 @@ describe('AvatarPage', () => {
   });
 
   it('restaura para o padrão no backend', async () => {
-    jest.mocked(buscarAparenciaRemota).mockResolvedValue({ corCerebro: 'verde', cabelo: 'moicano', acessorio: null });
+    jest.mocked(buscarAparenciaRemota).mockResolvedValue({ ...APARENCIA_PADRAO, corCerebro: 'verde', cabelo: 'moicano' });
     renderPage();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Editar aparência do avatar' })).toBeEnabled());
 
@@ -138,7 +157,7 @@ describe('AvatarPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Restaurar alterações/i }));
 
-    await waitFor(() => expect(salvarAparenciaRemota).toHaveBeenCalledWith({ corCerebro: 'rosa', cabelo: null, acessorio: null }));
+    await waitFor(() => expect(salvarAparenciaRemota).toHaveBeenCalledWith(APARENCIA_PADRAO));
     expect(screen.getByRole('button', { name: 'Rosa' })).toHaveClass('selecionado');
     expect(screen.getByText('Avatar restaurado ao padrão.')).toBeInTheDocument();
   });

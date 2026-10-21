@@ -17,7 +17,8 @@ export const sincronizarAparencia = (id: string) => {
         salvarAparencia(id, aparencia);
       }
     })
-    .catch(() => { requisicoes.delete(id); });
+    .catch(() => {})
+    .finally(() => { requisicoes.delete(id); });
   requisicoes.set(id, requisicao);
   return requisicao;
 };
@@ -30,8 +31,6 @@ const lerRegistro = (id?: string) => {
   }
 };
 
-export const temAparenciaSalva = (id?: string) => lerRegistro(id) !== null;
-
 export const carregarAparencia = (id?: string): AparenciaAvatar => {
   try {
     const dados: unknown = JSON.parse(lerRegistro(id) ?? 'null');
@@ -42,6 +41,8 @@ export const carregarAparencia = (id?: string): AparenciaAvatar => {
         ? valor.corCerebro : APARENCIA_PADRAO.corCerebro,
       cabelo: ['loiro', 'cacheado', 'moicano'].includes(valor.cabelo ?? '') ? valor.cabelo! : null,
       acessorio: ['coroa', 'oculos', 'chapeu-formatura'].includes(valor.acessorio ?? '') ? valor.acessorio! : null,
+      luva: ['luva-boxe', 'luva-cirurgica', 'luva-la'].includes(valor.luva ?? '') ? valor.luva! : null,
+      calcado: ['sapato-plantao', 'tenis-cano-alto', 'tenis-esportivo'].includes(valor.calcado ?? '') ? valor.calcado! : null,
     };
   } catch {
     return APARENCIA_PADRAO;
