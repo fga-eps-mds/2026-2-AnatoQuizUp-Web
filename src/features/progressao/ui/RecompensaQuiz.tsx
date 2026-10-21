@@ -48,7 +48,6 @@ export const RecompensaQuiz = ({ resultado, onJogarDeNovo, onVoltar }: Recompens
         {/* Celebracao de novo elo conquistado (Telas 4 e 5 do Figma). */}
         {resultado.subiuDeElo && (
           <EloConquistadoBanner
-            eloAnterior={resultado.eloAnterior}
             novoElo={novoElo}
             xpRecebido={recompensa.xpTotalRecebido}
             xpExcedente={xpExcedente}
