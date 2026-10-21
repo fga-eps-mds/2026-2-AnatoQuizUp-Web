@@ -1,6 +1,7 @@
 import { Crown } from 'lucide-react';
 
 import { AvatarCosmetico } from '../../../shared/ui/profile-identity-card';
+import { EloIcon } from '../../progressao/ui/EloIcon';
 import type { LinhaRanking } from '../types';
 
 type PodiumRankingProps = {
@@ -38,7 +39,7 @@ const CONFIG_DEGRAU: Record<1 | 2 | 3, DegrauConfig> = {
   },
 };
 
-/** Um degrau do podio: avatar, nome (com nivel e selo "Você") e o bloco com posicao e metrica. */
+/** Um degrau do podio: avatar, nome (com nivel, elo e selo "Você") e o bloco com posicao e metrica. */
 const Degrau = ({
   linha,
   rotuloMetrica,
@@ -60,13 +61,19 @@ const Degrau = ({
             tamanho="sm"
           />
         </div>
-        <div className="flex max-w-[8rem] flex-col items-center text-center">
+        <div className="flex max-w-[9rem] flex-col items-center text-center">
           <span className="flex items-center gap-1">
             <span className="truncate text-sm font-black text-[#0A1128]">{linha.nome}</span>
           </span>
           {linha.nivel !== undefined && (
             <span className="text-[10px] font-black uppercase tracking-wide text-[#7C3AED]">
               Nível {linha.nivel}
+            </span>
+          )}
+          {linha.elo && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#FFF7ED] px-2 py-0.5 text-[10px] font-black text-[#EA580C]">
+              <EloIcon elo={linha.elo} size={11} className="text-[#EA580C]" />
+              {linha.elo}
             </span>
           )}
           {linha.destaque && (
