@@ -158,7 +158,7 @@ describe('CardAmigo', () => {
     expect(screen.queryByRole('button', { name: /Desfazer amizade/i })).not.toBeInTheDocument();
   });
 
-  it('renderiza avatar equipado', () => {
+  it('mostra o cérebro ativo em vez de uma foto antiga equipada', () => {
     renderCard({
       cosmeticos: {
         AVATAR: criarCosmetico('AVATAR', {
@@ -168,12 +168,13 @@ describe('CardAmigo', () => {
       },
     });
 
-    expect(screen.getByRole('img', { name: 'Avatar Especial' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Avatar de Ana Paula' })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Avatar Especial' })).not.toBeInTheDocument();
   });
 
-  it('exibe iniciais como fallback quando sem cosmeticos', () => {
+  it('exibe cérebro padrão quando sem cosméticos', () => {
     renderCard();
 
-    expect(screen.getByText('AP')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Avatar de Ana Paula' })).toBeInTheDocument();
   });
 });

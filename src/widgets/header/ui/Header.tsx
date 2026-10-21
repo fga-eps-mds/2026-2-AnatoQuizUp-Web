@@ -344,7 +344,7 @@ export const Header = ({ previewUser }: { previewUser?: User } = {}) => {
           >
             <div className="shrink-0">
               <AvatarCosmetico
-                identidade={{ nome: user.name }}
+                identidade={{ nome: user.name, usuarioId: user.role === "STUDENT" ? user.id : undefined, preferirAvatarCerebro: user.role === "STUDENT" }}
                 cosmeticos={cosmeticos}
                 tamanho="sm"
               />
@@ -363,7 +363,7 @@ export const Header = ({ previewUser }: { previewUser?: User } = {}) => {
           <div className="flex items-center gap-3 px-2">
             <div className="shrink-0">
               <AvatarCosmetico
-                identidade={{ nome: user.name }}
+                identidade={{ nome: user.name, usuarioId: user.role === "STUDENT" ? user.id : undefined, preferirAvatarCerebro: user.role === "STUDENT" }}
                 cosmeticos={{}}
                 tamanho="sm"
               />

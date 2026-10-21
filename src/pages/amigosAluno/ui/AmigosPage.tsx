@@ -485,6 +485,7 @@ export const AmigosPage = () => {
                           <div className="flex min-w-0 items-center gap-3">
                             <ProfileIdentityCard
                               identidade={{
+                                usuarioId: colega.id,
                                 nome: colega.nome,
                                 nickname: colega.nickname ?? null,
                               }}
@@ -596,6 +597,7 @@ export const AmigosPage = () => {
                           <div className="flex min-w-0 items-center gap-3">
                             <ProfileIdentityCard
                               identidade={{
+                                usuarioId: convite.amigo.id,
                                 nome: convite.amigo.nome,
                                 nickname: convite.amigo.nickname ?? null,
                               }}

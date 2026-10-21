@@ -3,6 +3,8 @@
  * Compoe avatar + cosmeticos equipados (moldura, icone, titulo, plano de fundo) e,
  * no modo editavel, exibe e-mail/saldo e botoes de personalizar/editar.
  */
+import { AvatarCerebro } from '../../avatar/AvatarCerebro';
+import { useAparenciaAvatar } from '../../avatar/useAparenciaAvatar';
 import { Coins, Mail, Pencil, Plus } from 'lucide-react';
 
 import type { ItemInventario, TipoItemLoja } from '../../../features/loja';
@@ -12,6 +14,8 @@ import { CODIGO_LOGO_PREMIUM, GRADIENTE_OURO } from '../cosmetics';
 
 // Dados textuais minimos exibidos no cartao.
 export type IdentidadePerfil = {
+  usuarioId?: string;
+  preferirAvatarCerebro?: boolean;
   nome: string;
   nickname?: string | null;
   curso?: string | null;
@@ -58,13 +62,8 @@ export type AvatarCosmeticoProps = {
 
 type CirculoProps = AvatarCosmeticoProps;
 
-/**
- * Renderiza o circulo do avatar resolvendo a prioridade dos cosmeticos:
- * avatar (imagem) > icone de perfil (com caso especial da logo premium) >
- * aparencia (rosto/cabelo) > iniciais.
- * Aplica a moldura equipada por cima, quando houver.
- */
 const Circulo = ({ identidade, cosmeticos, tamanho }: CirculoProps) => {
+  const aparencia = useAparenciaAvatar(identidade.usuarioId);
   const moldura = cosmeticos.MOLDURA;
   const avatar = cosmeticos.AVATAR;
   const icone = cosmeticos.ICONE_PERFIL;
@@ -74,8 +73,9 @@ const Circulo = ({ identidade, cosmeticos, tamanho }: CirculoProps) => {
 
   let conteudo;
 
-  // Prioridade 1: avatar com imagem propria.
-  if (avatar && avatarSrc) {
+  if (identidade.usuarioId || identidade.preferirAvatarCerebro) {
+    conteudo = <AvatarCerebro aparencia={aparencia} nome={identidade.nome} className={dimensao} />;
+  } else if (avatar && avatarSrc) {
     conteudo = (
       <img
         src={avatarSrc}
@@ -134,13 +134,11 @@ const Circulo = ({ identidade, cosmeticos, tamanho }: CirculoProps) => {
     );
   // Prioridade 4 (fallback): iniciais do nome sobre gradiente padrao.
   } else {
-    conteudo = (
-      <div
-        className={`${dimensao} flex items-center justify-center rounded-full bg-gradient-to-br from-[#0A1128] to-[#0d9488] font-black text-[#71edc8] ${TAMANHO_TEXTO[tamanho]}`}
-      >
-        {montarIniciais(identidade.nome)}
-      </div>
-    );
+    conteudo = identidade.usuarioId
+      ? <AvatarCerebro aparencia={aparencia} nome={identidade.nome} className={dimensao} />
+      : <div className={`${dimensao} flex items-center justify-center rounded-full bg-gradient-to-br from-[#0A1128] to-[#0d9488] font-black text-[#71edc8] ${TAMANHO_TEXTO[tamanho]}`}>
+          {montarIniciais(identidade.nome)}
+        </div>;
   }
 
   // Quando ha moldura equipada, envolve o conteudo com a borda cosmetica.

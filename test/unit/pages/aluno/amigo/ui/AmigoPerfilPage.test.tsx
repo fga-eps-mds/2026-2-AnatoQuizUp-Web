@@ -91,8 +91,9 @@ describe('AmigoPerfilPage', () => {
     expect(await screen.findByText('Rafael Oliveira')).toBeInTheDocument();
     expect(screen.getByText('@rafael')).toBeInTheDocument();
     expect(
-      screen.getByRole('img', { name: 'Avatar do Rafael' }),
+      screen.getByRole('img', { name: 'Avatar de Rafael Oliveira' }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Avatar do Rafael' })).not.toBeInTheDocument();
     expect(buscarPerfilSocialMock).toHaveBeenCalledWith('aluno-2');
   });
 

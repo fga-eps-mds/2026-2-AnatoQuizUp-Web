@@ -11,6 +11,10 @@ import { AvatarPage } from '../../../../../../src/pages/aluno/avatar/AvatarPage'
 jest.mock('../../../../../../src/app/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('../../../../../../src/features/ranking', () => ({ obterRankingGeral: jest.fn() }));
 jest.mock('../../../../../../src/shared/api/httpClient', () => ({ httpClient: { get: jest.fn() } }));
+jest.mock('../../../../../../src/shared/avatar/avatarApi', () => ({
+  buscarAparenciaRemota: jest.fn().mockResolvedValue({ corCerebro: 'rosa', cabelo: null, acessorio: null }),
+  salvarAparenciaRemota: jest.fn(),
+}));
 
 const auth = useAuth as jest.Mock;
 const dashboard = httpClient.get as jest.Mock;
@@ -45,7 +49,7 @@ beforeEach(() => {
 test('shows the real profile information and dashboard values', async () => {
   renderRoutes();
   expect(screen.getByRole('heading', { name: 'Olá, Leticia' })).toBeInTheDocument();
-  expect(screen.getByText('LM')).toBeInTheDocument();
+  expect(screen.getByRole('img', { name: 'Avatar de Leticia Martins' })).toBeInTheDocument();
   expect(screen.getByText('16/02/2002')).toBeInTheDocument();
   expect(screen.getByText('9º semestre')).toBeInTheDocument();
   expect(screen.getByText('05/04/2025')).toBeInTheDocument();

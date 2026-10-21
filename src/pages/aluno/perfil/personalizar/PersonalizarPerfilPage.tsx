@@ -453,6 +453,7 @@ export const PersonalizarPerfilPage = () => {
                 <div className="p-2">
                   <ProfileIdentityCard
                     identidade={{
+                      usuarioId: user.id,
                       nome: user.name,
                       nickname,
                       curso: cursoLabel,
