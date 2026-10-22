@@ -187,7 +187,7 @@ export const EloConquistadoBanner = ({
           aria-label={textos.ariaLabelBarra}
           value={textos.percentualBarra}
           max={100}
-          className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-[#0A1128]/10 accent-[#EA580C]"
+          className="mt-4 block h-2.5 w-full appearance-none overflow-hidden rounded-full bg-[#0A1128]/10 [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-[#EA580C] [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-[#0A1128]/10 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-[#EA580C] [&::-webkit-progress-value]:transition-all [&::-webkit-progress-value]:duration-700 [&::-webkit-progress-value]:ease-out"
         />
 
         <div className="mt-2 flex items-center justify-between text-xs font-bold text-[#0A1128]/60">
