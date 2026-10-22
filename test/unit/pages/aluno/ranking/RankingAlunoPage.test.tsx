@@ -44,11 +44,13 @@ jest.mock('../../../../../src/features/ranking', () => ({
   ),
 }));
 
+import { buscarProgressoXp } from '../../../../../src/features/progressao/progressaoService';
 import { obterRankingAmigos, obterRankingGeral } from '../../../../../src/features/ranking';
 import { RankingAlunoPage } from '../../../../../src/pages/aluno/ranking/ui/RankingAlunoPage';
 
 const geralMock = obterRankingGeral as jest.Mock;
 const amigosMock = obterRankingAmigos as jest.Mock;
+const progressoMock = buscarProgressoXp as jest.Mock;
 
 const criarEntrada = (over: Record<string, unknown> = {}) => ({
   posicao: 1,
@@ -91,12 +93,23 @@ describe('RankingAlunoPage', () => {
     expect(screen.getByText(/de 10/)).toBeInTheDocument();
   });
 
-  test('mostra banner de perfil privado quando o usuario atual e nulo', async () => {
+  test('mostra banner de perfil privado, preserva elo real da API e exibe traco nos acertos quando usuarioAtual e nulo', async () => {
     geralMock.mockResolvedValue({ dados: [], usuarioAtual: null, totalParticipantes: 0 });
+    progressoMock.mockResolvedValueOnce({
+      xpTotal: 1940,
+      nivel: 6,
+      proximoNivel: 7,
+      xpNoNivel: 140,
+      xpNecessarioNoNivel: 300,
+      xpFaltante: 160,
+      percentual: 46,
+    });
 
     renderPage();
 
     expect(await screen.findByText(/perfil está privado/i)).toBeInTheDocument();
+    expect(await screen.findByText('Elo atual: Interno')).toBeInTheDocument();
+    expect(screen.getByText('Taxa de acerto: —')).toBeInTheDocument();
   });
 
   test('troca para a aba de amigos e mostra dica quando esta sozinho', async () => {

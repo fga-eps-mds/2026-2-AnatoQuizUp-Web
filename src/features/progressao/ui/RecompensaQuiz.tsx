@@ -31,6 +31,7 @@ const LinhaXp = ({ rotulo, valor }: { rotulo: string; valor: number }) => (
 export const RecompensaQuiz = ({ resultado, onJogarDeNovo, onVoltar }: RecompensaQuizProps) => {
   const { recompensa, progresso } = resultado;
   const [mostrarJornadaElos, setMostrarJornadaElos] = useState(false);
+  const [celebracaoEloFechada, setCelebracaoEloFechada] = useState(false);
 
   const dadosElo = resolverDadosEloProgresso(progresso);
   const novoElo = resultado.novoElo ?? dadosElo.eloAtual;
@@ -46,13 +47,13 @@ export const RecompensaQuiz = ({ resultado, onJogarDeNovo, onVoltar }: Recompens
     <div className="flex min-h-screen flex-col items-center bg-[#F8FAFC] p-4 md:p-6">
       <div className="flex w-full max-w-3xl flex-col gap-5">
         {/* Celebracao de novo elo conquistado (Telas 4 e 5 do Figma). */}
-        {resultado.subiuDeElo && (
+        {resultado.subiuDeElo && !celebracaoEloFechada && (
           <EloConquistadoBanner
             novoElo={novoElo}
             xpRecebido={recompensa.xpTotalRecebido}
             xpExcedente={xpExcedente}
             progresso={progresso}
-            onContinuar={onJogarDeNovo}
+            onContinuar={() => setCelebracaoEloFechada(true)}
             onVerJornada={() => setMostrarJornadaElos((atual) => !atual)}
           />
         )}

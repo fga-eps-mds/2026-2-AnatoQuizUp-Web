@@ -88,10 +88,9 @@ export const RankingAlunoPage = () => {
     };
   }, [aba]);
 
-  // Quando o aluno abre Minha progressao ou Todos os elos, consulta /quiz/progresso
-  // para enriquecer os dados de elo mesmo quando o perfil esta privado no ranking geral.
+  // Consulta /quiz/progresso na montagem para exibir os dados reais de elo do aluno
+  // mesmo na visao principal do ranking quando o perfil esta privado no ranking geral.
   useEffect(() => {
-    if (visao === 'ranking') return;
     let ativo = true;
 
     buscarProgressoXp()
@@ -107,7 +106,7 @@ export const RankingAlunoPage = () => {
     return () => {
       ativo = false;
     };
-  }, [visao]);
+  }, []);
 
   // Recarrega o ranking a cada troca de aba; flag evita aplicar resultado apos unmount.
   // Converte uma entrada bruta da API na linha exibida pelo board (com cosmeticos, elo e destaque).
@@ -198,6 +197,7 @@ export const RankingAlunoPage = () => {
 
   const acertosUsuario = resposta?.usuarioAtual?.totalAcertos ?? 0;
   const taxaAcertoUsuario = resposta?.usuarioAtual?.taxaAcerto ?? 0;
+  const semMetricasUsuario = carregando || !usuarioAtual;
 
   return (
     <main className="min-h-full bg-[#F8FAFC] px-4 py-6 sm:px-6 lg:px-8">
@@ -310,11 +310,11 @@ export const RankingAlunoPage = () => {
                 </span>
                 <div className="min-w-0">
                   <p className="text-3xl font-black leading-none tabular-nums text-[#0A1128]">
-                    {carregando ? '—' : acertosUsuario.toLocaleString('pt-BR')}
+                    {semMetricasUsuario ? '—' : acertosUsuario.toLocaleString('pt-BR')}
                   </p>
                   <h2 className="mt-2 text-base font-black text-[#0A1128]">Seus acertos</h2>
                   <p className="mt-1 text-sm font-medium text-[#0A1128]/55">
-                    Taxa de acerto: {carregando ? '—' : `${taxaAcertoUsuario}%`}
+                    Taxa de acerto: {semMetricasUsuario ? '—' : `${taxaAcertoUsuario}%`}
                   </p>
                 </div>
               </article>

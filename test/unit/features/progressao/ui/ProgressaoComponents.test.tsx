@@ -153,6 +153,9 @@ describe('EloConquistadoBanner, TodosOsElosGrid e MinhaProgressaoElo', () => {
     expect(screen.getByRole('heading', { name: 'Novo elo conquistado' })).toBeInTheDocument();
     expect(screen.getByText(/Os 30 XP excedentes foram mantidos/)).toBeInTheDocument();
     expect(screen.getByText('Interno')).toBeInTheDocument();
+    expect(
+      screen.getByRole('progressbar', { name: 'Progresso para o elo Interno' }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
     fireEvent.click(screen.getByRole('button', { name: 'Ver jornada' }));
@@ -256,8 +259,9 @@ describe('RecompensaQuiz', () => {
     expect(screen.getByText('+10 XP')).toBeInTheDocument();
   });
 
-  it('celebra o novo nivel e o novo elo quando o aluno evolui', () => {
+  it('celebra o novo nivel e o novo elo quando o aluno evolui e permite fechar a celebracao com Continuar', () => {
     const academico = obterFaixaEloPorNomeOuCodigo('ACADEMICO')!;
+    const onJogarDeNovo = jest.fn();
     render(
       <RecompensaQuiz
         resultado={resultado({
@@ -268,7 +272,7 @@ describe('RecompensaQuiz', () => {
           xpExcedenteElo: 10,
           progresso: progresso({ xpTotal: 510, nivel: 3, proximoNivel: 4, eloAtual: academico }),
         })}
-        onJogarDeNovo={jest.fn()}
+        onJogarDeNovo={onJogarDeNovo}
         onVoltar={jest.fn()}
       />,
     );
@@ -278,6 +282,12 @@ describe('RecompensaQuiz', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver jornada' }));
     expect(screen.getByRole('region', { name: 'Todos os elos' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+    expect(
+      screen.queryByRole('heading', { name: 'Novo elo conquistado' }),
+    ).not.toBeInTheDocument();
+    expect(onJogarDeNovo).not.toHaveBeenCalled();
   });
 
   it('avisa quando a rodada ja tinha sido concluida e trata rodada sem filtros', () => {

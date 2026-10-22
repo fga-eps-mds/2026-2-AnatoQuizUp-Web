@@ -1,6 +1,7 @@
 import type { CodigoEloXp, EloJornada, FaixaElo, ProgressoNivel, StatusFaixaElo } from './types';
 
 // Faixas padrao de elos espelhadas no frontend para calculo imediato, fallbacks e icones.
+// IMPORTANTE: manter sincronizado com FAIXAS_ELO em src/modules/progressao/progressao.constants.ts do Quiz-Service.
 export const FAIXAS_ELO_PADRAO: readonly FaixaElo[] = [
   {
     codigo: 'CURIOSO',

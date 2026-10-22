@@ -183,15 +183,12 @@ export const EloConquistadoBanner = ({
           </span>
         </div>
 
-        <div
+        <progress
           aria-label={textos.ariaLabelBarra}
-          className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-[#0A1128]/10"
-        >
-          <div
-            className="h-full rounded-full bg-[#EA580C] transition-all duration-700 ease-out"
-            style={{ width: `${textos.percentualBarra}%` }}
-          />
-        </div>
+          value={textos.percentualBarra}
+          max={100}
+          className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-[#0A1128]/10 accent-[#EA580C]"
+        />
 
         <div className="mt-2 flex items-center justify-between text-xs font-bold text-[#0A1128]/60">
           <span>{formatar(dados.xpTotal)} XP</span>
