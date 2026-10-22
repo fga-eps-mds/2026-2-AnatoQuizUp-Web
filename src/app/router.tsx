@@ -38,6 +38,7 @@ import { AmigoPerfilPage } from "../pages/aluno/amigo";
 import { PerfilAlunoPage } from "../pages/aluno/perfil";
 import { EditarPerfilPage } from "../pages/aluno/perfil/editar";
 import { LojaPage } from "../pages/aluno/loja";
+import { MissoesPage } from "../pages/aluno/missoes/MissoesPage";
 import { ConquistasPage } from "../pages/aluno/conquistas";
 
 import { NotFoundPage } from '../pages/not-found';
@@ -199,6 +200,8 @@ export const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/aluno/missoes" element={<ProtectedRoute allowedRoles={['STUDENT']}><MissoesPage /></ProtectedRoute>} />
 
         {/* Fluxo de quiz avulso e historico do aluno. */}
         <Route
