@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { CheckCircle2, PartyPopper, RotateCcw, Sparkles } from 'lucide-react';
 
+import { resolverDadosEloProgresso } from '../eloUtils';
 import type { ResultadoTentativa } from '../types';
 import { BarraNivel } from './BarraNivel';
+import { EloConquistadoBanner } from './EloConquistadoBanner';
+import { TodosOsElosGrid } from './TodosOsElosGrid';
 
 type RecompensaQuizProps = {
   resultado: ResultadoTentativa;
@@ -21,10 +25,19 @@ const LinhaXp = ({ rotulo, valor }: { rotulo: string; valor: number }) => (
 
 /**
  * Tela de fim de quiz: resumo da rodada, detalhamento do XP recebido, XP
- * acumulado, nivel atual e, quando houver, a celebracao de novo nivel.
+ * acumulado, nivel/elo atual e, quando houver, a celebracao de novo nivel
+ * e de novo elo conquistado (Telas 4 e 5 do Figma).
  */
 export const RecompensaQuiz = ({ resultado, onJogarDeNovo, onVoltar }: RecompensaQuizProps) => {
   const { recompensa, progresso } = resultado;
+  const [mostrarJornadaElos, setMostrarJornadaElos] = useState(false);
+  const [celebracaoEloFechada, setCelebracaoEloFechada] = useState(false);
+
+  const dadosElo = resolverDadosEloProgresso(progresso);
+  const novoElo = resultado.novoElo ?? dadosElo.eloAtual;
+  const xpExcedente =
+    resultado.xpExcedenteElo ?? Math.max(0, dadosElo.xpTotal - novoElo.xpMinimo);
+
   const taxa =
     resultado.totalQuestoes === 0
       ? 0
@@ -32,7 +45,21 @@ export const RecompensaQuiz = ({ resultado, onJogarDeNovo, onVoltar }: Recompens
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-[#F8FAFC] p-4 md:p-6">
-      <div className="flex w-full max-w-xl flex-col gap-4">
+      <div className="flex w-full max-w-3xl flex-col gap-5">
+        {/* Celebracao de novo elo conquistado (Telas 4 e 5 do Figma). */}
+        {resultado.subiuDeElo && !celebracaoEloFechada && (
+          <EloConquistadoBanner
+            novoElo={novoElo}
+            xpRecebido={recompensa.xpTotalRecebido}
+            xpExcedente={xpExcedente}
+            progresso={progresso}
+            onContinuar={() => setCelebracaoEloFechada(true)}
+            onVerJornada={() => setMostrarJornadaElos((atual) => !atual)}
+          />
+        )}
+
+        {mostrarJornadaElos && <TodosOsElosGrid progresso={progresso} />}
+
         {/* Celebracao de novo nivel. */}
         {resultado.subiuDeNivel && (
           <div
@@ -92,7 +119,7 @@ export const RecompensaQuiz = ({ resultado, onJogarDeNovo, onVoltar }: Recompens
             </p>
           )}
 
-          {/* XP acumulado, nivel atual e progresso ate o proximo nivel. */}
+          {/* XP acumulado, nivel/elo atual e progresso ate o proximo nivel/elo. */}
           <div className="mt-6">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#0A1128]/50">

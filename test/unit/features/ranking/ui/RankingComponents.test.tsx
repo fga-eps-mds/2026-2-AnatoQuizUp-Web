@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 
 import { PodiumRanking } from '../../../../../src/features/ranking/ui/PodiumRanking';
@@ -28,10 +29,10 @@ describe('RankingRow', () => {
     expect(screen.getByText('80%')).toBeInTheDocument();
   });
 
-  test('mostra XP como metrica principal e o nivel quando o ranking e por XP', () => {
+  test('mostra XP como metrica principal, o nivel e o elo quando o ranking e por XP', () => {
     render(
       <RankingRow
-        linha={criarLinha({ pontuacao: 1320, nivel: 5, totalAcertos: 7 })}
+        linha={criarLinha({ pontuacao: 1320, nivel: 5, elo: 'Acadêmico', totalAcertos: 7 })}
         rotuloMetrica="XP"
       />,
     );
@@ -39,6 +40,7 @@ describe('RankingRow', () => {
     expect(screen.getByText('1.320')).toBeInTheDocument();
     expect(screen.getByText('XP')).toBeInTheDocument();
     expect(screen.getByText('Nível 5')).toBeInTheDocument();
+    expect(screen.getByText('Acadêmico')).toBeInTheDocument();
     // O total de acertos deixa de ser o numero em destaque.
     expect(screen.queryByText('7')).not.toBeInTheDocument();
   });
@@ -153,12 +155,12 @@ describe('RankingBoard', () => {
 });
 
 describe('PodiumRanking por XP', () => {
-  test('mostra XP e nivel de cada degrau', () => {
+  test('mostra XP, nivel e elo de cada degrau', () => {
     render(
       <PodiumRanking
         linhas={[
-          criarLinha({ posicao: 1, id: 'a', nome: 'Ana', pontuacao: 2500, nivel: 7 }),
-          criarLinha({ posicao: 2, id: 'b', nome: 'Bia', pontuacao: 900, nivel: 4 }),
+          criarLinha({ posicao: 1, id: 'a', nome: 'Ana', pontuacao: 2500, nivel: 7, elo: 'Interno' }),
+          criarLinha({ posicao: 2, id: 'b', nome: 'Bia', pontuacao: 900, nivel: 4, elo: 'Acadêmico' }),
         ]}
         rotuloMetrica="XP"
       />,
@@ -168,5 +170,7 @@ describe('PodiumRanking por XP', () => {
     expect(screen.getByText('900')).toBeInTheDocument();
     expect(screen.getByText('Nível 7')).toBeInTheDocument();
     expect(screen.getByText('Nível 4')).toBeInTheDocument();
+    expect(screen.getByText('Interno')).toBeInTheDocument();
+    expect(screen.getByText('Acadêmico')).toBeInTheDocument();
   });
 });
