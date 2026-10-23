@@ -9,6 +9,7 @@ const LIMITE = 10;
 // Rotulo legivel de cada origem de XP.
 const ROTULO_ORIGEM: Record<OrigemXp, string> = {
   QUIZ_CONCLUIDO: 'Quiz concluído',
+  MISSAO_CONCLUIDA: 'Missão concluída',
 };
 
 const formatarData = (iso: string) => {
@@ -20,6 +21,7 @@ const formatarData = (iso: string) => {
 
 /** Descricao do quiz relacionado a uma entrada de XP (tema, dificuldade e placar). */
 const descreverQuiz = (item: HistoricoXpItem) => {
+  if (item.missao) return item.missao.nome;
   if (!item.quiz) return '—';
   const partes = [item.quiz.tema ?? 'Quiz', item.quiz.dificuldade].filter(Boolean).join(' · ');
   return `${partes} (${item.quiz.totalAcertos}/${item.quiz.totalQuestoes} acertos)`;
@@ -98,7 +100,7 @@ export const HistoricoXp = () => {
             <tr className="text-xs font-bold uppercase tracking-wider text-[#0A1128]/50">
               <th scope="col" className="px-4 pb-4">Data</th>
               <th scope="col" className="px-4 pb-4">Origem</th>
-              <th scope="col" className="px-4 pb-4">Quiz</th>
+              <th scope="col" className="px-4 pb-4">Atividade</th>
               <th scope="col" className="px-4 pb-4 text-right">Valor</th>
             </tr>
           </thead>

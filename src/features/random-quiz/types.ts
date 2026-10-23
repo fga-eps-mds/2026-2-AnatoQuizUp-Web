@@ -38,6 +38,7 @@ export type QuestaoQuizAnwser = {
 
 // Feedback retornado apos responder: correcao, recompensas e conquistas desbloqueadas.
 export type QuestaoQuizFeedback = {
+  missoesConcluidas?: { nome: string; recompensaXp: number }[];
   correcao: boolean;
   saibaMais: string | null;
   respostaCorreta: QuestionAlternativeKey;
