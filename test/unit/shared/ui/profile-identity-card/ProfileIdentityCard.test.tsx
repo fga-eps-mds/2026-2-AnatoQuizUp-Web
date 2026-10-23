@@ -105,7 +105,7 @@ describe('ProfileIdentityCard', () => {
       />,
     );
 
-    expect(screen.getByRole('img', { name: 'Avatar Coruja' })).toHaveAttribute(
+    expect(screen.getByRole('img', { name: 'Avatar de João Silva' })).toHaveAttribute(
       'src',
       '/avatar.png',
     );
@@ -194,7 +194,7 @@ describe('ProfileIdentityCard', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Personalizar perfil' }));
+    await user.click(screen.getByRole('button', { name: 'Personalizar avatar' }));
 
     expect(onPersonalizar).toHaveBeenCalledTimes(1);
   });
@@ -203,7 +203,7 @@ describe('ProfileIdentityCard', () => {
     render(<ProfileIdentityCard identidade={identidade} onPersonalizar={jest.fn()} />);
 
     expect(
-      screen.queryByRole('button', { name: 'Personalizar perfil' }),
+      screen.queryByRole('button', { name: 'Personalizar avatar' }),
     ).not.toBeInTheDocument();
   });
 

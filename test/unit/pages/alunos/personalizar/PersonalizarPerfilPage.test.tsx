@@ -188,7 +188,7 @@ describe('PersonalizarPerfilPage', () => {
 
     renderWithProviders(<PersonalizarPerfilPage />);
 
-    expect(screen.getByText('Personalizar Perfil')).toBeInTheDocument();
+    expect(screen.getByText('Personalizar avatar')).toBeInTheDocument();
     
     await waitFor(() => {
       expect(screen.getByText('Coruja')).toBeInTheDocument();
