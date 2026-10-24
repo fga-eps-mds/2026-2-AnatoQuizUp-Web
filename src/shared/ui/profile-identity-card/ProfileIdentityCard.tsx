@@ -79,7 +79,7 @@ const Circulo = ({ identidade, cosmeticos, tamanho }: CirculoProps) => {
     conteudo = (
       <img
         src={avatarSrc}
-        alt={avatar.nome}
+        alt={`Avatar de ${identidade.nome}`}
         className={`${dimensao} rounded-full bg-white object-cover`}
       />
     );
@@ -257,7 +257,7 @@ export const ProfileIdentityCard = ({
                 className="inline-flex items-center gap-2 rounded-lg bg-[#14b8a6] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#0d9488]"
               >
                 <Plus size={14} aria-hidden="true" />
-                Personalizar perfil
+                Personalizar avatar
               </button>
             )}
             {onEditar && (

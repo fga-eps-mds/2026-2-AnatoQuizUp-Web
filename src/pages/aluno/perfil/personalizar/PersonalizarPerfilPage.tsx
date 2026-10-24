@@ -436,7 +436,7 @@ export const PersonalizarPerfilPage = () => {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="mx-auto flex max-w-5xl flex-col gap-6">
           <header>
-            <h1 className="text-3xl font-black text-[#00214d]">Personalizar Perfil</h1>
+            <h1 className="text-3xl font-black text-[#00214d]">Personalizar avatar</h1>
             <p className="mt-1 text-sm font-semibold text-gray-500">
               Use seus itens para montar sua identidade
             </p>
