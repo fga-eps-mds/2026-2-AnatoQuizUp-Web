@@ -1,0 +1,138 @@
+name: CD - Homologação Web
+
+on:
+  workflow_run:
+    workflows: ['CI - Frontend']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: netlify-homologacao
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Publicar Web no Netlify
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      HOMOLOG_URL: https://anatoquizup-homolog-2026-2.netlify.app
+      VITE_API_URL: https://minio-homolog.up.railway.app/api/v1
+      VITE_USE_MOCKS: 'false'
+
+    steps:
+      - name: Confirmar commit atual e CI aprovada
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CURRENT_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')
+          if [ "$CURRENT_SHA" != "$DEPLOY_SHA" ]; then
+            echo "::notice::Commit superado por outra atualização da main; publicação ignorada."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          APPROVED=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f branch=main -f head_sha="$DEPLOY_SHA" -f status=success \
+            --jq '[.workflow_runs[] | select(.event == "push")] | length')
+          if [ "$APPROVED" -eq 0 ]; then
+            echo "::error::Não há CI aprovada na main para o commit solicitado."
+            exit 1
+          fi
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+
+      - name: Obter o código aprovado
+        if: steps.source.outputs.publish == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+          persist-credentials: false
+
+      - name: Preparar Node
+        if: steps.source.outputs.publish == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Conferir autorização e site de destino
+        if: steps.source.outputs.publish == 'true'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          node --input-type=module <<'NODE'
+          const { NETLIFY_AUTH_TOKEN: token, NETLIFY_SITE_ID: id } = process.env;
+          if (!token || !id) throw new Error('Configure NETLIFY_AUTH_TOKEN e NETLIFY_SITE_ID nos secrets do Web.');
+          const response = await fetch(`https://api.netlify.com/api/v1/sites/${encodeURIComponent(id)}`, {
+            headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(30000),
+          });
+          if (!response.ok) throw new Error(`Não foi possível validar o site Netlify (HTTP ${response.status}).`);
+          const site = await response.json();
+          if (site.name !== 'anatoquizup-homolog-2026-2') throw new Error('O site informado não é a homologação esperada. Publicação interrompida.');
+          console.log('Site de homologação conferido.');
+          NODE
+
+      - name: Instalar dependências
+        if: steps.source.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Gerar aplicação e identificar a versão
+        if: steps.source.outputs.publish == 'true'
+        run: |
+          npm run build
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          writeFileSync('dist/version.json', JSON.stringify({
+            commit: process.env.DEPLOY_SHA,
+            run: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+          }, null, 2) + '\n');
+          NODE
+          test -s dist/index.html
+          test -s dist/_redirects
+
+      - name: Publicar a homologação
+        if: steps.source.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          CURRENT_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq '.sha')
+          if [ "$CURRENT_SHA" != "$DEPLOY_SHA" ]; then
+            echo "::error::A main mudou durante o build. Aguarde o CD do commit mais recente."
+            exit 1
+          fi
+          npx --yes netlify-cli@27.14.2 deploy --prod --no-build --dir=dist \
+            --site="$NETLIFY_SITE_ID" --message="GitHub Actions: $DEPLOY_SHA" --timeout=180
+
+      - name: Verificar versão publicada e acesso direto às rotas
+        if: steps.source.outputs.publish == 'true'
+        run: |
+          node --input-type=module <<'NODE'
+          const base = process.env.HOMOLOG_URL;
+          const response = await fetch(`${base}/version.json?commit=${process.env.DEPLOY_SHA}`, {
+            cache: 'no-store', signal: AbortSignal.timeout(30000),
+          });
+          if (!response.ok || (await response.json()).commit !== process.env.DEPLOY_SHA) {
+            throw new Error('O site não apresentou a versão publicada. Confira o deploy no Netlify.');
+          }
+          for (const path of ['/aluno/perfil', '/aluno/perfil/avatar']) {
+            const page = await fetch(`${base}${path}`, { signal: AbortSignal.timeout(30000) });
+            const html = await page.text();
+            if (!page.ok || !html.includes('id="root"')) throw new Error(`Falha no acesso direto a ${path}.`);
+          }
+          console.log(`Versão ${process.env.DEPLOY_SHA} publicada; rotas internas respondem com a aplicação.`);
+          NODE
