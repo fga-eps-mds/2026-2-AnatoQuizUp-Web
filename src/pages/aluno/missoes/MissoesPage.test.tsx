@@ -37,6 +37,7 @@ describe('Missões diárias', () => {
     expect(await screen.findByText('Aquecimento diário')).toBeInTheDocument();
     expect(screen.getByText('Você completou as missões de hoje!')).toBeInTheDocument();
     expect(screen.getByText('30 XP')).toBeInTheDocument();
+    expect(screen.getAllByRole('progressbar', { name: 'Progresso: 100%' })).toHaveLength(2);
   });
   it('permite tentar novamente após erro', async () => {
     get

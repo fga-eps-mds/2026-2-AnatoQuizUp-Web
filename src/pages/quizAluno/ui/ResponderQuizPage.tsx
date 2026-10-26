@@ -150,7 +150,7 @@ export const ResponderQuizPage = () => {
   if (resultado) {
     return (
       <>
-      {missoesConcluidas.map((m) => <div role="status" key={m.nome} className="m-4 rounded-xl bg-[#e6f8f5] p-4 font-bold text-[#139a8a]">Missão concluída: {m.nome} · +{m.recompensaXp} XP</div>)}
+      {missoesConcluidas.map((m) => <output aria-live="polite" key={m.nome} className="m-4 block rounded-xl bg-[#e6f8f5] p-4 font-bold text-[#139a8a]">Missão concluída: {m.nome} · +{m.recompensaXp} XP</output>)}
       <RecompensaQuiz
         resultado={resultado}
         onJogarDeNovo={handleJogarDeNovo}
@@ -301,7 +301,7 @@ export const ResponderQuizPage = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6 flex flex-col items-center">
       <div className="w-full max-w-5xl">
-        {missoesConcluidas.map((m) => <div role="status" key={m.nome} className="mb-4 rounded-xl bg-[#e6f8f5] p-4 font-bold text-[#139a8a]">Missão concluída: {m.nome} · +{m.recompensaXp} XP</div>)}
+        {missoesConcluidas.map((m) => <output aria-live="polite" key={m.nome} className="mb-4 block rounded-xl bg-[#e6f8f5] p-4 font-bold text-[#139a8a]">Missão concluída: {m.nome} · +{m.recompensaXp} XP</output>)}
         <button
           onClick={() => navigate("/aluno/quiz/escolha")}
           title="Sair antes de concluir a rodada não concede XP"
