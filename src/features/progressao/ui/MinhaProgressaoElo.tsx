@@ -1,7 +1,8 @@
 import { AvatarCosmetico } from '../../../shared/ui/profile-identity-card';
 import type { SlotsCosmeticos } from '../../profile-cosmetics';
-import { resolverDadosEloProgresso } from '../eloUtils';
-import type { ProgressoNivel } from '../types';
+import { formatarDataPrazo, resolverDadosEloProgresso } from '../eloUtils';
+import type { EstadoElo, ProgressoNivel } from '../types';
+import { AvisoInatividadeBanner } from './AvisoInatividadeBanner';
 import { EloIcon } from './EloIcon';
 
 type MinhaProgressaoEloProps = {
@@ -10,9 +11,17 @@ type MinhaProgressaoEloProps = {
   cosmeticos?: SlotsCosmeticos;
   progresso?: ProgressoNivel | null;
   onVerTodosOsElos?: () => void;
+  onFazerQuiz?: () => void;
 };
 
 const formatar = (valor: number) => valor.toLocaleString('pt-BR');
+
+// Rotulo e cor do estado do elo exibidos no card "Elo atual".
+const ESTADO_ELO: Record<EstadoElo, { rotulo: string; cor: string }> = {
+  ATIVO: { rotulo: 'ativo', cor: 'text-[#059669]' },
+  EM_RISCO: { rotulo: 'em risco', cor: 'text-[#B45309]' },
+  REBAIXADO: { rotulo: 'rebaixado', cor: 'text-[#BE123C]' },
+};
 
 /**
  * Componente da Tela 2 ("Minha progressão") do Figma.
@@ -26,13 +35,39 @@ export const MinhaProgressaoElo = ({
   cosmeticos = {},
   progresso,
   onVerTodosOsElos,
+  onFazerQuiz,
 }: MinhaProgressaoEloProps) => {
   const dados = resolverDadosEloProgresso(progresso);
-  const { eloAtual, maiorElo, proximoElo, xpTotal, nivel, xpFaltanteProximoElo, percentualElo } =
-    dados;
+  const {
+    eloAtual,
+    maiorElo,
+    proximoElo,
+    xpTotal,
+    xpElo,
+    nivel,
+    xpFaltanteProximoElo,
+    percentualElo,
+    estadoElo,
+    diasInatividade,
+    diasParaAviso,
+    prazoRebaixamentoEm,
+  } = dados;
+  const estado = ESTADO_ELO[estadoElo] ?? ESTADO_ELO.ATIVO;
+  const prazo = formatarDataPrazo(prazoRebaixamentoEm);
 
   return (
     <section aria-label="Minha progressão de elos" className="flex w-full flex-col gap-5">
+      {/* Telas 1 a 3: aviso preventivo, elo em risco e elo rebaixado */}
+      <AvisoInatividadeBanner
+        estadoElo={estadoElo}
+        diasInatividade={diasInatividade}
+        diasParaAviso={diasParaAviso}
+        prazoRebaixamentoEm={prazoRebaixamentoEm}
+        eloAtual={eloAtual}
+        maiorElo={maiorElo}
+        onFazerQuiz={onFazerQuiz}
+      />
+
       {/* Card superior de identidade + badge do elo atual */}
       <article className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#0A1128]/10 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-4">
@@ -74,13 +109,18 @@ export const MinhaProgressaoElo = ({
         <article className="rounded-2xl border border-[#0A1128]/10 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold text-[#0A1128]/55">Elo atual</p>
           <p className="mt-1 text-xl font-black text-[#0A1128]">{eloAtual.nome}</p>
-          <p className="mt-1 text-xs font-medium text-[#0A1128]/50">Estado: ativo</p>
+          <p className={`mt-1 text-xs font-bold ${estado.cor}`}>Estado: {estado.rotulo}</p>
+          {prazo && estadoElo !== 'ATIVO' && (
+            <p className="mt-0.5 text-xs font-medium text-[#0A1128]/50">
+              Rebaixamento previsto: {prazo}
+            </p>
+          )}
         </article>
 
         <article className="rounded-2xl border border-[#0A1128]/10 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold text-[#0A1128]/55">XP de elo</p>
           <p className="mt-1 text-xl font-black tabular-nums text-[#0A1128]">
-            {formatar(xpTotal)} XP
+            {formatar(xpElo)} XP
           </p>
           <p className="mt-1 text-xs font-medium text-[#0A1128]/50">Define o elo atual</p>
         </article>
@@ -96,7 +136,9 @@ export const MinhaProgressaoElo = ({
         <article className="rounded-2xl border border-[#0A1128]/10 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold text-[#0A1128]/55">Maior elo</p>
           <p className="mt-1 text-xl font-black text-[#0A1128]">{maiorElo.nome}</p>
-          <p className="mt-1 text-xs font-medium text-[#0A1128]/50">Conquista preservada</p>
+          <p className="mt-1 text-xs font-medium text-[#0A1128]/50">
+            {maiorElo.ordem > eloAtual.ordem ? 'Preservado após o rebaixamento' : 'Conquista preservada'}
+          </p>
         </article>
       </div>
 
@@ -113,8 +155,8 @@ export const MinhaProgressaoElo = ({
               </h3>
               <p className="mt-0.5 text-xs font-medium text-[#0A1128]/60">
                 {proximoElo
-                  ? `${formatar(xpTotal)} XP de elo acumulados. A próxima faixa começa em ${formatar(proximoElo.xpMinimo)} XP.`
-                  : `${formatar(xpTotal)} XP de elo acumulados. Este é o maior nível de progressão, sem limite máximo.`}
+                  ? `${formatar(xpElo)} XP de elo acumulados. A próxima faixa começa em ${formatar(proximoElo.xpMinimo)} XP.`
+                  : `${formatar(xpElo)} XP de elo acumulados. Este é o maior nível de progressão, sem limite máximo.`}
               </p>
             </div>
           </div>
@@ -158,8 +200,8 @@ export const MinhaProgressaoElo = ({
 
         <p className="mt-2.5 text-xs font-semibold text-[#0A1128]/55">
           {proximoElo
-            ? `Faixa atual: ${formatar(eloAtual.xpMinimo)} XP · XP de elo: ${formatar(xpTotal)} · Próximo elo: ${formatar(proximoElo.xpMinimo)} XP`
-            : `Faixa atual: ${formatar(eloAtual.xpMinimo)} XP · XP de elo: ${formatar(xpTotal)} · Sem limite máximo`}
+            ? `Faixa atual: ${formatar(eloAtual.xpMinimo)} XP · XP de elo: ${formatar(xpElo)} · Próximo elo: ${formatar(proximoElo.xpMinimo)} XP`
+            : `Faixa atual: ${formatar(eloAtual.xpMinimo)} XP · XP de elo: ${formatar(xpElo)} · Sem limite máximo`}
         </p>
       </article>
 
@@ -170,8 +212,12 @@ export const MinhaProgressaoElo = ({
           <li>Quizzes concluídos que concedem XP aumentam o XP total e o XP de elo.</li>
           <li>O elo muda automaticamente ao atingir a próxima faixa; XP excedente permanece.</li>
           <li>
-            Alterações futuras nas faixas ou inatividade não apagam o XP total nem reduzem o maior
-            elo já conquistado.
+            Ficar muitos dias sem concluir um quiz válido coloca o elo em risco e, depois do prazo,
+            reduz um elo por período — o elo Curioso é o piso.
+          </li>
+          <li>
+            O rebaixamento ajusta apenas o XP de elo: o XP total e o maior elo já conquistado nunca
+            são reduzidos, e o elo volta sozinho quando o XP de elo alcança a faixa de novo.
           </li>
         </ul>
         <p className="mt-3 text-xs font-semibold text-[#0A1128]/60">

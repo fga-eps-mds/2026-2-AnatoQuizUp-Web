@@ -153,8 +153,11 @@ export const TodosOsElosGrid = ({ progresso }: TodosOsElosGridProps) => {
             <li>Quizzes válidos concedem XP total e XP de elo.</li>
             <li>A faixa é alcançada automaticamente; o XP excedente continua.</li>
             <li>
-              Alterações nas faixas ou inatividade não apagam o XP total nem reduzem o maior elo já
-              conquistado.
+              A inatividade prolongada reduz um elo por período, até o piso do elo Curioso.
+            </li>
+            <li>
+              O rebaixamento ajusta só o XP de elo: o XP total e o maior elo já conquistado seguem
+              preservados, e voltar a acumular XP de elo recupera o elo perdido.
             </li>
           </ol>
         </article>
