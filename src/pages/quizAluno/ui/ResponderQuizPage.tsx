@@ -50,6 +50,7 @@ export const ResponderQuizPage = () => {
   // Rodada em andamento: id da tentativa (amarra as respostas no backend), as
   // questoes sorteadas e, ao final, o resultado com a recompensa de XP.
   const [tentativaId, setTentativaId] = useState<string | null>(null);
+  const [missoesConcluidas, setMissoesConcluidas] = useState<{ nome: string; recompensaXp: number }[]>([]);
   const [resultado, setResultado] = useState<ResultadoTentativa | null>(null);
   const [isConcluindo, setIsConcluindo] = useState(false);
   const [erroConclusao, setErroConclusao] = useState<string | null>(null);
@@ -137,6 +138,7 @@ export const ResponderQuizPage = () => {
     setAlternativaSelecionada(null);
     setJaRespondeu(false);
     setFeedback(null);
+    setMissoesConcluidas([]);
     setIsPaused(false);
     setErroConclusao(null);
     setErroResposta(null);
@@ -147,11 +149,14 @@ export const ResponderQuizPage = () => {
   // Rodada concluida: mostra a recompensa de XP, o nivel e a celebracao de novo nivel.
   if (resultado) {
     return (
+      <>
+      {missoesConcluidas.map((m) => <output aria-live="polite" key={m.nome} className="m-4 block rounded-xl bg-[#e6f8f5] p-4 font-bold text-[#139a8a]">Missão concluída: {m.nome} · +{m.recompensaXp} XP</output>)}
       <RecompensaQuiz
         resultado={resultado}
         onJogarDeNovo={handleJogarDeNovo}
         onVoltar={() => navigate("/aluno/quiz/escolha")}
       />
+      </>
     );
   }
 
@@ -242,6 +247,7 @@ export const ResponderQuizPage = () => {
         ...(tentativaId ? { tentativaId } : {}),
       });
 
+      setMissoesConcluidas(response.missoesConcluidas ?? []);
       setFeedback(response);
       setSaldoMoedas(response.saldoMoedas);
       adicionarDesbloqueios(response.conquistasDesbloqueadas ?? []);
@@ -265,6 +271,7 @@ export const ResponderQuizPage = () => {
     setAlternativaSelecionada(null);
     setJaRespondeu(false);
     setFeedback(null);
+    setMissoesConcluidas([]);
     setIsPaused(false);
     setIndiceAtual((prev) => prev + 1);
   };
@@ -280,7 +287,9 @@ export const ResponderQuizPage = () => {
     try {
       setIsConcluindo(true);
       setErroConclusao(null);
-      setResultado(await concluirTentativaQuiz(tentativaId));
+      const resultadoQuiz = await concluirTentativaQuiz(tentativaId);
+      setMissoesConcluidas(resultadoQuiz.missoesConcluidas ?? []);
+      setResultado(resultadoQuiz);
     } catch (error) {
       console.error("Erro ao concluir o quiz:", error);
       setErroConclusao("Não foi possível concluir o quiz. Tente novamente.");
@@ -292,6 +301,7 @@ export const ResponderQuizPage = () => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6 flex flex-col items-center">
       <div className="w-full max-w-5xl">
+        {missoesConcluidas.map((m) => <output aria-live="polite" key={m.nome} className="mb-4 block rounded-xl bg-[#e6f8f5] p-4 font-bold text-[#139a8a]">Missão concluída: {m.nome} · +{m.recompensaXp} XP</output>)}
         <button
           onClick={() => navigate("/aluno/quiz/escolha")}
           title="Sair antes de concluir a rodada não concede XP"

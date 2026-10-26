@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { User } from "../../../entities/user/model/types";
-import { Home, LogOut, Coins, Menu, Users, X, Newspaper, BookOpen, List, Calendar, PieChart, ChevronRight, ShoppingBag, Trophy, Medal, UserRound } from "lucide-react";
+import { Home, LogOut, Coins, Menu, Users, X, Newspaper, BookOpen, List, Calendar, PieChart, ChevronRight, ShoppingBag, Trophy, Medal, UserRound, Star } from "lucide-react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../app/providers/AuthProvider";
@@ -157,6 +157,8 @@ export const Header = ({ previewUser }: { previewUser?: User } = {}) => {
       isActive: location.pathname.startsWith("/aluno/amigos"),
     };
 
+    const studentMissoesItem: NavItem = { key: "aluno-missoes", label: "Missões", icon: Star, onSelect: () => navigate("/aluno/missoes"), isActive: location.pathname.startsWith("/aluno/missoes") };
+
     const studentRankingItem: NavItem = {
       key: "aluno-ranking",
       label: "Ranking",
@@ -261,6 +263,7 @@ export const Header = ({ previewUser }: { previewUser?: User } = {}) => {
           minhasTurmasAlunoItem,
           studentAmigosItem,
           studentRankingItem,
+          studentMissoesItem,
           studentConquistasItem,
           studentLojaItem,
           studentHistoricoItem,

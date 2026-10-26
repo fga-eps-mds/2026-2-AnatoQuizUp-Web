@@ -135,6 +135,7 @@ export type NotificacaoElo = {
 
 // Resultado de concluir uma rodada. jaConcluida indica chamada repetida (sem XP novo).
 export type ResultadoTentativa = {
+  missoesConcluidas?: { nome: string; recompensaXp: number }[];
   tentativaId: string;
   tema: string | null;
   dificuldade: ApiQuestionDifficulty | null;
@@ -152,13 +153,14 @@ export type ResultadoTentativa = {
 };
 
 // Origens possiveis de XP (hoje, apenas a conclusao de quiz).
-export type OrigemXp = 'QUIZ_CONCLUIDO';
+export type OrigemXp = 'QUIZ_CONCLUIDO' | 'MISSAO_CONCLUIDA';
 
 // Linha do historico de XP: data, origem, quiz relacionado e valor.
 export type HistoricoXpItem = {
   id: string;
   data: string;
   origem: OrigemXp;
+  missao?: { codigo: string; nome: string } | null;
   quiz: {
     tentativaId: string;
     tema: string | null;
