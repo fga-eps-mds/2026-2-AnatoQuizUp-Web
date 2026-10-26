@@ -74,16 +74,18 @@ export const NotificacaoEloModal = () => {
     avancarFila();
   };
 
+  // `void` porque o navigate do react-router 7 devolve Promise e aqui o retorno e
+  // descartado: sem ele a navegacao fica como promessa sem tratamento.
   const irParaProgressao = () => {
     fechar();
-    navigate('/aluno/ranking');
+    void navigate('/aluno/ranking');
   };
 
   // Fecha antes de navegar: o modal vive no layout autenticado, entao deixa-lo aberto
   // cobriria a tela de destino (e o aviso continuaria nao lido).
   const irParaQuiz = () => {
     fechar();
-    navigate('/aluno/quiz/escolha');
+    void navigate('/aluno/quiz/escolha');
   };
 
   return (
