@@ -62,9 +62,14 @@ export type EloJornada = FaixaElo & {
   eloAnteriorNome: string | null;
 };
 
+// Estado do elo quanto a inatividade do aluno (US #89).
+export type EstadoElo = 'ATIVO' | 'EM_RISCO' | 'REBAIXADO';
+
 // Nivel/elo atual e progresso ate o proximo (dados da barra de progresso e telas de elo).
 export type ProgressoNivel = {
   xpTotal: number;
+  // Pontuacao que define o elo: sobe com o XP total, mas cai no rebaixamento por inatividade.
+  xpElo?: number;
   nivel: number;
   proximoNivel: number;
   xpNoNivel: number;
@@ -79,6 +84,53 @@ export type ProgressoNivel = {
   xpFaltanteProximoElo?: number;
   percentualElo?: number;
   todosOsElos?: EloJornada[];
+  // Inatividade: estado do elo, contagem de dias e prazo do proximo rebaixamento.
+  estadoElo?: EstadoElo;
+  diasInatividade?: number;
+  // Limiar configurado do aviso preventivo (o administrador pode mudar).
+  diasParaAviso?: number;
+  ultimaAtividadeEm?: string | null;
+  prazoRebaixamentoEm?: string | null;
+};
+
+// Tipos de evento do historico de progressao de elo.
+export type TipoEventoElo = 'PROMOCAO' | 'REBAIXAMENTO' | 'RECUPERACAO';
+
+// Linha do historico de elo (GET /quiz/progressao/elo/historico).
+export type EventoElo = {
+  id: string;
+  data: string;
+  tipo: TipoEventoElo;
+  eloAnterior: FaixaElo;
+  eloNovo: FaixaElo;
+  xpEloAntes: number;
+  xpEloDepois: number;
+  diasInatividade: number | null;
+};
+
+export type HistoricoEloResponse = {
+  dados: EventoElo[];
+  metadados: { page: number; limit: number; total: number; totalPages: number };
+};
+
+// Tipos de aviso de elo enviados ao aluno.
+export type TipoNotificacaoElo =
+  | 'AVISO_PREVENTIVO'
+  | 'ELO_EM_RISCO'
+  | 'VESPERA_REBAIXAMENTO'
+  | 'ELO_REBAIXADO'
+  | 'ELO_RECUPERADO';
+
+// Aviso de elo do proprio aluno (GET /quiz/progressao/notificacoes).
+export type NotificacaoElo = {
+  id: string;
+  data: string;
+  tipo: TipoNotificacaoElo;
+  titulo: string;
+  mensagem: string;
+  eloRelacionado: CodigoEloXp | null;
+  prazoRebaixamentoEm: string | null;
+  lida: boolean;
 };
 
 // Resultado de concluir uma rodada. jaConcluida indica chamada repetida (sem XP novo).

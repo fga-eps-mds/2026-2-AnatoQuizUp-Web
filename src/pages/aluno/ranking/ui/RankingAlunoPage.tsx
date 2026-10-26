@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, EyeOff, Medal, Trophy, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../../../app/providers/AuthProvider';
 import { converterItensEquipadosParaSlots } from '../../../../features/profile-cosmetics';
@@ -49,6 +49,7 @@ const montarDetalhe = (curso: string | null, semestre: string | null): string | 
  */
 export const RankingAlunoPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   // Aba ativa, visao ativa, resposta do ranking e estados de carga/erro.
   const [aba, setAba] = useState<AbaRanking>('geral');
   const [visao, setVisao] = useState<VisaoRanking>('ranking');
@@ -151,15 +152,22 @@ export const RankingAlunoPage = () => {
     const entrada = resposta.usuarioAtual;
     const xpTotal = entrada.xpTotal ?? 0;
     const nivel = entrada.nivel ?? 1;
-    const faixaPeloXp = calcularFaixaEloPorXp(xpTotal);
-    const faixaPeloRanking = obterFaixaEloPorNomeOuCodigo(entrada.elo);
+    // O ranking devolve o elo ATUAL do aluno (que pode ter caido por inatividade). Se o
+    // nome vier desconhecido, cai no elo calculado pelo XP em vez de assumir Curioso.
+    const faixaDoRanking = entrada.elo ? obterFaixaEloPorNomeOuCodigo(entrada.elo) : null;
     const eloEfetivo =
-      faixaPeloRanking && faixaPeloRanking.ordem > faixaPeloXp.ordem
-        ? faixaPeloRanking
-        : faixaPeloXp;
+      faixaDoRanking && faixaDoRanking.nome === entrada.elo
+        ? faixaDoRanking
+        : calcularFaixaEloPorXp(xpTotal);
+
+    // Esta rota nao traz o XP de elo. O XP total serve de aproximacao, mas limitado ao
+    // teto da faixa atual: num aluno rebaixado, o XP total extrapola a faixa e o card
+    // mostraria "7.000 XP de elo" num elo que termina em 5.999.
+    const xpEloAproximado = Math.min(xpTotal, eloEfetivo.xpMaximo ?? xpTotal);
 
     return {
       xpTotal,
+      xpElo: xpEloAproximado,
       nivel,
       proximoNivel: nivel + 1,
       xpNoNivel: 0,
@@ -168,6 +176,9 @@ export const RankingAlunoPage = () => {
       percentual: 0,
       eloAtual: eloEfetivo,
       maiorElo: eloEfetivo,
+      estadoElo: 'ATIVO',
+      diasInatividade: 0,
+      prazoRebaixamentoEm: null,
     };
   }, [progressoServidor, resposta?.usuarioAtual]);
 
@@ -282,6 +293,7 @@ export const RankingAlunoPage = () => {
             cosmeticos={usuarioAtual?.cosmeticos}
             progresso={progressoEfetivo}
             onVerTodosOsElos={() => setVisao('elos')}
+            onFazerQuiz={() => navigate('/aluno/quiz/escolha')}
           />
         )}
 
@@ -438,7 +450,7 @@ export const RankingAlunoPage = () => {
                     Elo atual: {dadosElo.eloAtual.nome}
                   </h3>
                   <p className="mt-0.5 text-xs font-medium text-[#0A1128]/60">
-                    Nível {dadosElo.nivel} · {dadosElo.xpTotal.toLocaleString('pt-BR')} XP de elo
+                    Nível {dadosElo.nivel} · {dadosElo.xpElo.toLocaleString('pt-BR')} XP de elo
                     {dadosElo.proximoElo
                       ? ` · Próximo elo: ${dadosElo.proximoElo.nome} em ${dadosElo.xpFaltanteProximoElo.toLocaleString('pt-BR')} XP`
                       : ' · Elo máximo disponível'}

@@ -3,8 +3,10 @@
 import { httpClient } from '../../shared/api/httpClient';
 import { extractErrorMessage } from '../manage-questions/model/questionService';
 import type {
+  HistoricoEloResponse,
   HistoricoXpResponse,
   IniciarTentativaParams,
+  NotificacaoElo,
   ProgressoNivel,
   ResultadoTentativa,
   TentativaIniciada,
@@ -59,6 +61,46 @@ export const buscarHistoricoXp = async (
       params,
     });
     return data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+// GET /quiz/progressao/elo/historico — rebaixamentos e recuperacoes do proprio aluno.
+export const buscarHistoricoElo = async (
+  params: { page?: number; limit?: number } = {},
+): Promise<HistoricoEloResponse> => {
+  try {
+    const { data } = await httpClient.get<HistoricoEloResponse>(
+      `${QUIZ_ENDPOINT}/progressao/elo/historico`,
+      { params },
+    );
+    return data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+// GET /quiz/progressao/notificacoes — avisos de inatividade/elo do proprio aluno.
+// O destinatario sai do token no backend; nao existe parametro de usuario.
+export const buscarNotificacoesElo = async (
+  apenasNaoLidas = false,
+): Promise<NotificacaoElo[]> => {
+  try {
+    const { data } = await httpClient.get<NotificacaoElo[]>(
+      `${QUIZ_ENDPOINT}/progressao/notificacoes`,
+      { params: apenasNaoLidas ? { apenasNaoLidas: 'true' } : {} },
+    );
+    return data;
+  } catch (error) {
+    throw new Error(extractErrorMessage(error));
+  }
+};
+
+// POST /quiz/progressao/notificacoes/:id/lida — marca o aviso como lido.
+export const marcarNotificacaoEloLida = async (id: string): Promise<void> => {
+  try {
+    await httpClient.post(`${QUIZ_ENDPOINT}/progressao/notificacoes/${id}/lida`);
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }
