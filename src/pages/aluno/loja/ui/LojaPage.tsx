@@ -339,7 +339,7 @@ export const LojaPage = () => {
               </h1>
               <p className="text-sm font-medium text-[#0A1128]/55">
                 Use suas moedas ATP para turbinar seus estudos e personalizar o
-                seu perfil.
+                seu avatar.
               </p>
             </div>
           </div>

@@ -10,6 +10,7 @@ export type EntradaRanking = {
   semestre: string | null;
   xpTotal: number;
   nivel: number;
+  elo?: string;
   totalAcertos: number;
   totalRespondidas: number;
   taxaAcerto: number;
@@ -73,7 +74,7 @@ export type OpcaoListaTurma = {
  *
  * `pontuacao` e o valor exibido como metrica principal (XP no ranking de
  * alunos); quando ausente, os componentes mostram o total de acertos, como nos
- * rankings de turma e de lista. `nivel` so existe no ranking por XP.
+ * rankings de turma e de lista. `nivel` e `elo` existem no ranking por XP.
  */
 export type LinhaRanking = {
   posicao: number;
@@ -82,9 +83,11 @@ export type LinhaRanking = {
   nickname: string | null;
   detalhe: string | null;
   totalAcertos: number;
+  totalRespondidas?: number;
   taxaAcerto: number;
   pontuacao?: number;
   nivel?: number;
+  elo?: string;
   destaque: boolean;
   cosmeticos: SlotsCosmeticos;
 };

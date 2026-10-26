@@ -179,7 +179,7 @@ export const PerfilAlunoPage = ({ previewUser }: { previewUser?: User } = {}) =>
             <p className="profile-level-total">{progressoXp.xpTotal.toLocaleString('pt-BR')} XP acumulados</p>
             <BarraNivel progresso={progressoXp} />
           </div>}
-          <button className="profile-customize-link" type="button" onClick={() => navigate('/aluno/perfil/personalizar')}>Personalizar perfil</button>
+          <button className="profile-customize-link" type="button" onClick={() => navigate('/aluno/perfil/personalizar')}>Personalizar avatar</button>
           <PerformanceStrip data={performance} onNavigate={navigate} />
         </section>
         <section className="profile-data-card profile-status-card"><h3>Status da conta</h3><div><span>Acesso</span><strong className={user.status === 'ACTIVE' ? 'profile-active' : 'profile-inactive'}>{user.status === 'ACTIVE' ? 'ATIVO' : 'INATIVO'}</strong></div></section>
@@ -202,7 +202,7 @@ export const PerfilAlunoPage = ({ previewUser }: { previewUser?: User } = {}) =>
         <div className="profile-equipped-heading"><h3>Itens em uso</h3><button type="button" onClick={() => navigate('/aluno/loja')}>Personalizar →</button></div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: 'FOTO DE PERFIL', item: profilePicture },
+            { label: 'AVATAR', item: profilePicture },
             { label: 'MOLDURA', item: cosmeticos.MOLDURA },
             { label: 'TÍTULO', item: cosmeticos.TITULO },
             { label: 'FUNDO', item: cosmeticos.PLANO_FUNDO },

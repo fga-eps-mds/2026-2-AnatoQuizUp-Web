@@ -1,7 +1,7 @@
 import type { ApiQuestionDifficulty } from '../manage-questions';
 import type { QuizQuestion } from '../random-quiz/types';
 
-// Tipos da progressao do aluno: rodadas de quiz, XP e nivel.
+// Tipos da progressao do aluno: rodadas de quiz, XP, nivel e elo.
 
 // Filtros para iniciar uma rodada (os mesmos da tela de escolha do quiz).
 export type IniciarTentativaParams = {
@@ -24,7 +24,45 @@ export type RecompensaXp = {
   xpTotalRecebido: number;
 };
 
-// Nivel atual e progresso ate o proximo (dados da barra de progresso).
+// Codigos de elo de progressao por XP.
+export type CodigoEloXp =
+  | 'CURIOSO'
+  | 'ACADEMICO'
+  | 'INTERNO'
+  | 'R1'
+  | 'R3'
+  | 'R6'
+  | 'STAFF_DO_SERVICO';
+
+// Definicao de uma faixa de elo.
+export type FaixaElo = {
+  codigo: CodigoEloXp;
+  nome: string;
+  ordem: number;
+  xpMinimo: number;
+  xpMaximo: number | null;
+  objetivo: string;
+};
+
+// Status de cada elo na tela "Todos os elos".
+export type StatusFaixaElo =
+  | 'CONQUISTADO'
+  | 'ELO_ATUAL'
+  | 'PROXIMO_ELO'
+  | 'BLOQUEADO'
+  | 'ELO_MAXIMO';
+
+// Item da jornada de elos.
+export type EloJornada = FaixaElo & {
+  status: StatusFaixaElo;
+  conquistado: boolean;
+  ehAtual: boolean;
+  percentual: number;
+  xpFaltante: number;
+  eloAnteriorNome: string | null;
+};
+
+// Nivel/elo atual e progresso ate o proximo (dados da barra de progresso e telas de elo).
 export type ProgressoNivel = {
   xpTotal: number;
   nivel: number;
@@ -33,6 +71,14 @@ export type ProgressoNivel = {
   xpNecessarioNoNivel: number;
   xpFaltante: number;
   percentual: number;
+  eloAtual?: FaixaElo;
+  maiorElo?: FaixaElo;
+  proximoElo?: FaixaElo | null;
+  xpNoElo?: number;
+  xpNecessarioNoElo?: number | null;
+  xpFaltanteProximoElo?: number;
+  percentualElo?: number;
+  todosOsElos?: EloJornada[];
 };
 
 // Resultado de concluir uma rodada. jaConcluida indica chamada repetida (sem XP novo).
@@ -48,6 +94,10 @@ export type ResultadoTentativa = {
   progresso: ProgressoNivel;
   subiuDeNivel: boolean;
   nivelAnterior: number;
+  subiuDeElo?: boolean;
+  eloAnterior?: FaixaElo;
+  novoElo?: FaixaElo;
+  xpExcedenteElo?: number;
 };
 
 // Origens possiveis de XP (hoje, apenas a conclusao de quiz).

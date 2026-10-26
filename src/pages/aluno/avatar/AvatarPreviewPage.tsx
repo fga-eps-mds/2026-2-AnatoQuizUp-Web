@@ -17,8 +17,8 @@ export function AvatarPreviewPage() {
   return (
     <div className="profile-screen avatar-screen">
       <header className="profile-screen-header">
-        <h1>Meu perfil</h1>
-        <p>Gerencie suas informações e personalize sua experiência</p>
+        <h1>Personalizar avatar</h1>
+        <p>Use seus itens para montar sua identidade</p>
       </header>
       <nav className="profile-breadcrumb" aria-label="Localização">
         <Link to="/perfil-preview">Perfil</Link><span aria-hidden="true">/</span><span>Meu avatar</span>
