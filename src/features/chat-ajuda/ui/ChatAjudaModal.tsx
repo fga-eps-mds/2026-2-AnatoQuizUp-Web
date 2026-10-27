@@ -73,13 +73,7 @@ export const ChatAjudaModal = ({ onClose, questaoAtual }: ChatAjudaModalProps) =
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1128]/55 p-4 backdrop-blur-[2px]"
-      data-testid="chat-ajuda-overlay"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1128]/55 p-4 backdrop-blur-[2px]">
       <dialog
         open
         aria-modal="true"

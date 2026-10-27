@@ -174,7 +174,7 @@ describe('ChatAjudaModal', () => {
     await screen.findByText('Resposta.');
   });
 
-  it('fecha ao clicar no botao Fechar, no overlay e ao pressionar Escape', async () => {
+  it('fecha pelo botao Fechar e pela tecla Escape, os dois caminhos acessiveis', async () => {
     buscarDicaAjudaMock.mockResolvedValue('Dica qualquer.');
     const { onClose } = renderizar();
     await screen.findByText('Dica qualquer.');
@@ -182,14 +182,18 @@ describe('ChatAjudaModal', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Fechar ajuda' }));
     expect(onClose).toHaveBeenCalledTimes(1);
 
-    fireEvent.mouseDown(screen.getByRole('dialog'));
-    expect(onClose).toHaveBeenCalledTimes(1);
-
-    fireEvent.mouseDown(screen.getByTestId('chat-ajuda-overlay'));
-    expect(onClose).toHaveBeenCalledTimes(2);
-
     await userEvent.keyboard('{Escape}');
-    expect(onClose).toHaveBeenCalledTimes(3);
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('nao fecha ao clicar no fundo, que deixou de ser area clicavel', async () => {
+    buscarDicaAjudaMock.mockResolvedValue('Dica qualquer.');
+    const { onClose } = renderizar();
+    await screen.findByText('Dica qualquer.');
+
+    fireEvent.mouseDown(screen.getByRole('dialog').parentElement as HTMLElement);
+
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('funciona sem contexto de questao', async () => {
