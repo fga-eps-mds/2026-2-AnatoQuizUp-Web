@@ -15,7 +15,7 @@ type Missao = {
 type Dados = {
   periodo: { fim: string };
   missoes: Missao[];
-  resumo: { concluidas: number; total: number; xpGanhoHoje: number };
+  resumo: { concluidas: number; total: number; xpGanhoHoje: number; xpGanhoNoPeriodo?: number };
 };
 
 const formatarTempo = (restante: number) => {
@@ -63,17 +63,19 @@ const Cabecalho = ({
   carregando,
   erro,
   tempo,
+  semanal,
 }: {
   carregando: boolean;
   erro: boolean;
   tempo: string;
+  semanal: boolean;
 }) => (
   <header>
     <p className="text-[11px] font-bold text-[#ff7415]">
-      PROGRESSÃO / MISSÕES DIÁRIAS
+      PROGRESSÃO / MISSÕES {semanal ? "SEMANAIS" : "DIÁRIAS"}
     </p>
     <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-[32px] font-extrabold">Missões diárias</h1>
+      <h1 className="text-[32px] font-extrabold">Missões {semanal ? "semanais" : "diárias"}</h1>
       <span className="rounded-full bg-white px-6 py-2 text-xs font-bold text-[#667085]">
         {mensagemRenovacao(carregando, erro, tempo)}
       </span>
@@ -81,6 +83,10 @@ const Cabecalho = ({
     <p className="mt-2 text-sm text-[#667085]">
       Pequenos desafios para manter o ritmo de estudo e conquistar XP.
     </p>
+    <nav aria-label="Periodicidade das missões" className="mt-4 flex gap-3 text-sm font-bold">
+      <Link to="/aluno/missoes" aria-current={!semanal ? "page" : undefined} className="rounded-lg bg-white px-4 py-2">Diárias</Link>
+      <Link to="/aluno/missoes/semanais" aria-current={semanal ? "page" : undefined} className="rounded-lg bg-white px-4 py-2">Semanais</Link>
+    </nav>
   </header>
 );
 
@@ -205,22 +211,22 @@ const CartaoMissao = ({ missao }: { missao: Missao }) => {
   );
 };
 
-const ConteudoMissoes = ({ dados }: { dados: Dados }) => {
-  const { concluidas, total, xpGanhoHoje } = dados.resumo;
+const ConteudoMissoes = ({ dados, semanal }: { dados: Dados; semanal: boolean }) => {
+  const { concluidas, total, xpGanhoHoje, xpGanhoNoPeriodo } = dados.resumo;
   const percentual = total ? Math.round((concluidas / total) * 100) : 0;
   const todasConcluidas = Boolean(total) && concluidas === total;
   const corDestaque = todasConcluidas
     ? "bg-[#e6f8f5] text-[#139a8a]"
     : "bg-[#fff1e8] text-[#ff7415]";
   const titulo = todasConcluidas
-    ? "Você completou as missões de hoje!"
-    : "Seu progresso de hoje";
+    ? `Você completou as missões ${semanal ? "da semana" : "de hoje"}!`
+    : `Seu progresso ${semanal ? "da semana" : "de hoje"}`;
   const descricao = todasConcluidas
-    ? "Recompensas liberadas. Volte amanhã para novas missões."
+    ? `Recompensas liberadas. Volte ${semanal ? "na próxima semana" : "amanhã"} para novas missões.`
     : "Conclua atividades para ganhar XP e avançar no ranking.";
   const tituloLista = todasConcluidas
     ? "Resumo das missões"
-    : "Suas missões de hoje";
+    : `Suas missões ${semanal ? "da semana" : "de hoje"}`;
 
   return (
     <>
@@ -243,9 +249,9 @@ const ConteudoMissoes = ({ dados }: { dados: Dados }) => {
         </div>
         <div className="rounded-xl bg-[#fff8ed] px-8 py-5 text-center">
           <strong className="block text-2xl text-[#ff7415]">
-            {xpGanhoHoje} XP
+            {semanal ? (xpGanhoNoPeriodo ?? 0) : xpGanhoHoje} XP
           </strong>
-          <span className="text-xs text-[#667085]">ganhos hoje</span>
+          <span className="text-xs text-[#667085]">ganhos {semanal ? "nesta semana" : "hoje"}</span>
         </div>
       </section>
       <section>
@@ -262,7 +268,7 @@ const ConteudoMissoes = ({ dados }: { dados: Dados }) => {
       <aside className="rounded-[14px] bg-[#eaf3ff] p-5 text-sm">
         <strong>Como funcionam as missões?</strong>
         <p className="mt-1 text-xs text-[#667085]">
-          Elas renovam diariamente. Ao concluir uma meta, o XP é creditado
+          Elas renovam {semanal ? "toda segunda-feira à meia-noite de Brasília" : "diariamente"}. Ao concluir uma meta, o XP é creditado
           automaticamente.
         </p>
       </aside>
@@ -270,7 +276,9 @@ const ConteudoMissoes = ({ dados }: { dados: Dados }) => {
   );
 };
 
-export function MissoesPage() {
+export function MissoesPage({ periodicidade = "diarias" }: { periodicidade?: "diarias" | "semanais" }) {
+  const semanal = periodicidade === "semanais";
+  const endpoint = semanal ? "/missoes/minhas/semanais" : "/missoes/minhas";
   const [dados, setDados] = useState<Dados | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(false);
@@ -281,7 +289,7 @@ export function MissoesPage() {
     setErro(false);
 
     try {
-      setDados((await httpClient.get<Dados>("/missoes/minhas")).data);
+      setDados((await httpClient.get<Dados>(endpoint)).data);
       setAgora(Date.now());
     } catch {
       setErro(true);
@@ -289,13 +297,13 @@ export function MissoesPage() {
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [endpoint]);
 
   useEffect(() => {
     let ativa = true;
 
     httpClient
-      .get<Dados>("/missoes/minhas")
+      .get<Dados>(endpoint)
       .then(({ data }) => {
         if (ativa) {
           setDados(data);
@@ -312,7 +320,7 @@ export function MissoesPage() {
     return () => {
       ativa = false;
     };
-  }, []);
+  }, [endpoint]);
 
   useEffect(() => {
     let renovando = false;
@@ -346,13 +354,13 @@ export function MissoesPage() {
   } else if (dados.missoes.length === 0) {
     conteudo = <SemMissoes tempo={tempo} />;
   } else {
-    conteudo = <ConteudoMissoes dados={dados} />;
+    conteudo = <ConteudoMissoes dados={dados} semanal={semanal} />;
   }
 
   return (
     <div className="min-h-screen bg-[#f5f7fb] px-5 py-10 text-[#1e293b] md:px-12">
       <div className="mx-auto max-w-[1096px] space-y-7">
-        <Cabecalho carregando={carregando} erro={erro} tempo={tempo} />
+        <Cabecalho carregando={carregando} erro={erro} tempo={tempo} semanal={semanal} />
         {conteudo}
       </div>
     </div>

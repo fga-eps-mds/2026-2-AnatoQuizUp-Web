@@ -202,6 +202,7 @@ export const AppRouter = () => {
         />
 
         <Route path="/aluno/missoes" element={<ProtectedRoute allowedRoles={['STUDENT']}><MissoesPage /></ProtectedRoute>} />
+        <Route path="/aluno/missoes/semanais" element={<ProtectedRoute allowedRoles={['STUDENT']}><MissoesPage periodicidade="semanais" /></ProtectedRoute>} />
 
         {/* Fluxo de quiz avulso e historico do aluno. */}
         <Route

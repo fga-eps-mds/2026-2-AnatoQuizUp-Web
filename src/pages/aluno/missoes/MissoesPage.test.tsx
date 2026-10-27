@@ -95,3 +95,23 @@ describe('Missões diárias', () => {
     jest.useRealTimers();
   });
 });
+
+describe('Missões semanais', () => {
+  beforeEach(() => get.mockReset());
+
+  it('consulta o período semanal e mostra progresso e recompensa', async () => {
+    get.mockResolvedValue({ data: {
+      periodo: { fim },
+      resumo: { concluidas: 1, total: 1, xpGanhoHoje: 0, xpGanhoNoPeriodo: 100 },
+      missoes: [{ id: 's1', nome: 'Constância semanal', descricao: 'Responda 20 questões diferentes.', meta: 20, progresso: 20, recompensaXp: 100, status: 'CONCLUIDA' }],
+    } });
+
+    render(<MemoryRouter><MissoesPage periodicidade="semanais" /></MemoryRouter>);
+
+    expect(await screen.findByText('Constância semanal')).toBeInTheDocument();
+    expect(get).toHaveBeenCalledWith('/missoes/minhas/semanais');
+    expect(screen.getByText('Você completou as missões da semana!')).toBeInTheDocument();
+    expect(screen.getByText('100 XP')).toBeInTheDocument();
+    expect(screen.getByText('ganhos nesta semana')).toBeInTheDocument();
+  });
+});
