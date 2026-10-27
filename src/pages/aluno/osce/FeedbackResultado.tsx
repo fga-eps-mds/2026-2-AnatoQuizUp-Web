@@ -29,7 +29,7 @@ const NIVEL_ITEM: Record<
   nao_realizado: { rotulo: 'Não realizado', cor: 'text-rose-600', Icone: CircleSlash },
 };
 
-// Mantem a ordem em que os dominios aparecem na rubrica do cenario.
+// Mantem a ordem em que os dominios aparecem no checklist do cenario.
 function agruparPorDominio(itens: ItemAvaliado[]): [string, ItemAvaliado[]][] {
   const grupos = new Map<string, ItemAvaliado[]>();
   for (const item of itens) {
@@ -41,7 +41,7 @@ function agruparPorDominio(itens: ItemAvaliado[]): [string, ItemAvaliado[]][] {
 // "1.5 / 2" sem casa decimal desnecessaria — meio ponto so aparece quando existe.
 const formatarPontos = (valor: number) => (Number.isInteger(valor) ? `${valor}` : valor.toFixed(1));
 
-export const RubricaResultado = ({ avaliacao }: { avaliacao: AvaliacaoOsce }) => (
+export const FeedbackResultado = ({ avaliacao }: { avaliacao: AvaliacaoOsce }) => (
   <section
     aria-label="Resultado da estação OSCE"
     className="mt-5 rounded-lg border border-[#0D9488]/30 bg-white p-4 shadow-sm"
@@ -49,7 +49,7 @@ export const RubricaResultado = ({ avaliacao }: { avaliacao: AvaliacaoOsce }) =>
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E2E8F0] pb-3">
       <div>
         <p className="text-xs font-black uppercase tracking-widest text-[#0D9488]">
-          Rubrica do examinador
+          Feedback do examinador
         </p>
         <p className="text-sm font-medium text-[#64748B]">
           Diagnóstico esperado: {avaliacao.diagnosticoEsperado}
@@ -104,8 +104,8 @@ export const RubricaResultado = ({ avaliacao }: { avaliacao: AvaliacaoOsce }) =>
         <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
           O checklist e a nota global discordaram bastante nesta simulação. Isso costuma
-          significar que o caso saiu do que a rubrica prevê — leve o resultado ao professor em vez
-          de tomá-lo como veredito.
+          significar que o caso saiu do que esta avaliação consegue medir, então leve o resultado
+          ao professor em vez de tomá-lo como veredito.
         </span>
       </p>
     )}

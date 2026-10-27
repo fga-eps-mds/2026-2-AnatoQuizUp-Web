@@ -1,5 +1,5 @@
 // Pagina de simulacao OSCE: aluno escolhe um caso clinico, conversa em papel de
-// medico com o "paciente" (Gemini, via BFF) e, ao finalizar, recebe a rubrica
+// medico com o "paciente" (Gemini, via BFF) e, ao finalizar, recebe o feedback
 // pontuada do examinador. Ver docs/arquitetura/chatbot-osce.md.
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { ClipboardList, Loader2, Send, Stethoscope } from 'lucide-react';
@@ -12,7 +12,7 @@ import {
   type CenarioOsceResumo,
   type TurnoOsce,
 } from '../../../features/osce/osceService';
-import { RubricaResultado } from './RubricaResultado';
+import { FeedbackResultado } from './FeedbackResultado';
 
 // Converte **trecho** em <strong>, mesmo marcador usado pelo chat de ajuda.
 function renderizarTextoComNegrito(texto: string) {
@@ -175,7 +175,7 @@ export const OscePage = () => {
                 ) : (
                   <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
-                Finalizar e ver rubrica
+                Finalizar e ver feedback
               </button>
               <button
                 type="button"
@@ -213,7 +213,7 @@ export const OscePage = () => {
               ))}
             </ul>
 
-            {avaliacao && <RubricaResultado avaliacao={avaliacao} />}
+            {avaliacao && <FeedbackResultado avaliacao={avaliacao} />}
 
             {erro && (
               <p role="alert" className="mt-3 text-sm font-medium text-rose-600">
