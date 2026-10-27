@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Calendar, ChevronRight, ChevronLeft, Loader2, SearchX, Target, BookOpen } from 'lucide-react';
 import { buscarHistoricoQuiz } from '../../../features/historico-quiz/historicoQuizService';
 import { buscarQuantidadeDeQuestoesPorTema } from '../../../features/random-quiz/randomQuizService';
@@ -7,10 +7,11 @@ import type { ItemHistoricoQuiz } from '../../../features/historico-quiz/types';
 import { HistoricoXp } from '../../../features/progressao/ui/HistoricoXp';
 
 // Abas da pagina: sessoes de pratica (respostas) e XP recebido.
-type AbaHistorico = 'pratica' | 'xp';
+type AbaHistorico = 'pratica' | 'erros' | 'xp';
 
 const ABAS: Array<{ key: AbaHistorico; label: string }> = [
   { key: 'pratica', label: 'Sessões de prática' },
+  { key: 'erros', label: 'Revisar erros' },
   { key: 'xp', label: 'XP recebido' },
 ];
 
@@ -21,11 +22,13 @@ const ABAS: Array<{ key: AbaHistorico; label: string }> = [
  */
 export const HistoricoPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   // Itens crus do historico e os temas disponiveis para filtro.
   const [historicoBruto, setHistoricoBruto] = useState<ItemHistoricoQuiz[]>([]);
   const [temasFiltro, setTemasFiltro] = useState<{ nome: string }[]>([]);
   const [temaSelecionado, setTemaSelecionado] = useState<string>('Todos');
-  const [aba, setAba] = useState<AbaHistorico>('pratica');
+  const aba: AbaHistorico = searchParams.get('aba') === 'erros' ? 'erros' : searchParams.get('aba') === 'xp' ? 'xp' : 'pratica';
+  const [erroCarregamento, setErroCarregamento] = useState(false);
 
   // Estado de carga e controle de paginacao.
   const [isLoading, setIsLoading] = useState(true);
@@ -49,11 +52,13 @@ export const HistoricoPage = () => {
   const carregarHistorico = async (page: number, tema: string) => {
     try {
       setIsLoading(true);
+      setErroCarregamento(false);
 
       const params = {
         page,
         limit,
         tema: tema !== 'Todos' ? tema : undefined,
+        ...(aba === 'erros' && { somenteErros: true }),
       };
 
       const response = await buscarHistoricoQuiz(params);
@@ -64,41 +69,48 @@ export const HistoricoPage = () => {
       setPaginaAtual(page);
     } catch (error) {
       console.error('Erro ao buscar histórico:', error);
+      setErroCarregamento(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Recarrega a primeira pagina sempre que o tema selecionado muda.
+  // Recarrega a primeira pagina quando tema ou modo de revisao muda.
   useEffect(() => {
     let deveAtualizarEstado = true;
 
-    buscarHistoricoQuiz({
-      page: 1,
-      limit,
-      tema: temaSelecionado !== 'Todos' ? temaSelecionado : undefined,
-    })
-      .then((response) => {
+    const carregarPrimeiraPagina = async () => {
+      setIsLoading(true);
+      setErroCarregamento(false);
+
+      try {
+        const response = await buscarHistoricoQuiz({
+          page: 1,
+          limit,
+          tema: temaSelecionado !== 'Todos' ? temaSelecionado : undefined,
+          ...(aba === 'erros' && { somenteErros: true }),
+        });
+
         if (!deveAtualizarEstado) return;
 
         setHistoricoBruto(response.dados);
         setTotalItens(response.metadados.total);
         setTotalPaginas(response.metadados.totalPages);
         setPaginaAtual(1);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Erro ao buscar histórico:', error);
-      })
-      .finally(() => {
-        if (!deveAtualizarEstado) return;
+        if (deveAtualizarEstado) setErroCarregamento(true);
+      } finally {
+        if (deveAtualizarEstado) setIsLoading(false);
+      }
+    };
 
-        setIsLoading(false);
-      });
+    void carregarPrimeiraPagina();
 
     return () => {
       deveAtualizarEstado = false;
     };
-  }, [temaSelecionado]);
+  }, [temaSelecionado, aba]);
 
   // Agrupa as respostas em sessoes pela combinacao data + tema + dificuldade.
   const sessoesAgrupadas = useMemo(() => {
@@ -127,7 +139,7 @@ export const HistoricoPage = () => {
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black text-[#0A1128]">Histórico de Prática</h1>
-            <p className="text-[#0A1128]/60 mt-1 font-medium">Suas sessões de estudo organizadas por data e tema.</p>
+            <p className="text-[#0A1128]/60 mt-1 font-medium">Consulte suas respostas e revise as questões que errou.</p>
           </div>
 
           <div className="bg-white px-5 py-3 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-3">
@@ -136,7 +148,7 @@ export const HistoricoPage = () => {
             </div>
 
             <div>
-              <p className="text-[10px] uppercase font-bold text-[#0A1128]/40 tracking-wider">Total de Respostas</p>
+              <p className="text-[10px] uppercase font-bold text-[#0A1128]/40 tracking-wider">{aba === 'erros' ? 'Erros encontrados' : 'Total de respostas'}</p>
               <p className="text-xl font-black text-[#0A1128]">{totalItens}</p>
             </div>
           </div>
@@ -144,7 +156,7 @@ export const HistoricoPage = () => {
 
         {/* Alterna entre as sessoes de pratica e o historico de XP. */}
         <div className="mb-4 w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-          <div className="grid grid-cols-2">
+            <div className="grid grid-cols-3">
             {ABAS.map((opcao) => {
               const ativa = aba === opcao.key;
 
@@ -152,7 +164,7 @@ export const HistoricoPage = () => {
                 <button
                   key={opcao.key}
                   type="button"
-                  onClick={() => setAba(opcao.key)}
+                  onClick={() => setSearchParams(opcao.key === 'pratica' ? {} : { aba: opcao.key })}
                   aria-pressed={ativa}
                   className={`min-h-12 border-r border-gray-100 px-3 text-sm font-black transition-colors last:border-r-0 ${
                     ativa
@@ -196,23 +208,46 @@ export const HistoricoPage = () => {
           </div>
 
           <div className="p-6">
-            <div className="hidden md:grid grid-cols-12 gap-4 text-xs font-bold text-[#0A1128]/50 uppercase tracking-wider mb-4 px-4">
+            {aba === 'pratica' && <div className="hidden md:grid grid-cols-12 gap-4 text-xs font-bold text-[#0A1128]/50 uppercase tracking-wider mb-4 px-4">
               <div className="col-span-3">Data da Sessão</div>
               <div className="col-span-5">Tema e Dificuldade</div>
               <div className="col-span-3 text-center">Volume</div>
               <div className="col-span-1 text-center">Revisar</div>
-            </div>
+            </div>}
 
-            {isLoading ? (
+            {erroCarregamento ? (
+              <div role="alert" className="py-12 text-center">
+                <p className="font-bold text-rose-700">Não foi possível carregar suas respostas.</p>
+                <button type="button" onClick={() => carregarHistorico(1, temaSelecionado)} className="mt-3 rounded-lg bg-[#14D5C2] px-4 py-2 font-bold text-white">Tentar novamente</button>
+              </div>
+            ) : isLoading ? (
               <div className="py-16 flex flex-col items-center justify-center">
                 <Loader2 className="w-10 h-10 text-[#14D5C2] animate-spin mb-4" />
                 <p className="text-[#0A1128] font-bold">Carregando seu histórico...</p>
               </div>
-            ) : sessoesAgrupadas.length === 0 ? (
+            ) : historicoBruto.length === 0 ? (
               <div className="py-16 flex flex-col items-center justify-center text-center">
                 <SearchX className="w-12 h-12 text-[#0A1128]/20 mb-4" />
-                <p className="text-[#0A1128] font-bold text-lg">Nenhum registro encontrado</p>
-                <p className="text-[#0A1128]/50 text-sm mt-1">Você não tem histórico para este filtro.</p>
+                <p className="text-[#0A1128] font-bold text-lg">{aba === 'erros' ? 'Nenhum erro encontrado' : 'Nenhum registro encontrado'}</p>
+                <p className="text-[#0A1128]/50 text-sm mt-1">{aba === 'erros' ? 'Não há respostas erradas neste filtro.' : 'Você não tem histórico para este filtro.'}</p>
+              </div>
+            ) : aba === 'erros' ? (
+              <div className="space-y-4" aria-label="Questões erradas para revisão">
+                {historicoBruto.map((item) => (
+                  <article key={item.id} className="rounded-2xl border border-rose-100 bg-white p-5 shadow-sm">
+                    <p className="mb-2 text-xs font-bold text-[#0A1128]/50">{item.questao.tema.nome} · {item.questao.dificuldade} · {new Date(item.criadoEm).toLocaleDateString('pt-BR')}</p>
+                    <h2 className="text-lg font-black text-[#0A1128]">{item.questao.enunciado}</h2>
+                    {item.questao.urlImagem && <img src={item.questao.urlImagem} alt="Imagem da questão" className="mt-4 max-h-80 rounded-lg object-contain" />}
+                    <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                      <p className="rounded-lg bg-rose-50 p-3 text-rose-800">Sua resposta: <strong>{item.respostaMarcada} — {item.questao.alternativas?.[`alternativa${item.respostaMarcada}`] ?? item.respostaMarcada}</strong></p>
+                      <p className="rounded-lg bg-emerald-50 p-3 text-emerald-800">Resposta correta: <strong>{item.questao.respostaCorreta} — {item.questao.alternativas?.[`alternativa${item.questao.respostaCorreta}`] ?? item.questao.respostaCorreta}</strong></p>
+                    </div>
+                    <div className="mt-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-950">
+                      <h3 className="font-black">Explicação do professor</h3>
+                      <p className="mt-1">{item.questao.saibaMais || 'Esta questão ainda não possui explicação cadastrada.'}</p>
+                    </div>
+                  </article>
+                ))}
               </div>
             ) : (
               /* Cada sessao agrupada vira um cartao clicavel que abre os detalhes. */
@@ -260,7 +295,7 @@ export const HistoricoPage = () => {
           </div>
 
           {/* Controles de paginacao (anterior / pagina atual / proxima). */}
-          {!isLoading && sessoesAgrupadas.length > 0 && (
+          {!isLoading && !erroCarregamento && historicoBruto.length > 0 && (
             <div className="p-6 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-gray-50">
               <p className="text-sm font-medium text-[#0A1128]/50">
                 Lote de registros mais recentes
@@ -269,6 +304,7 @@ export const HistoricoPage = () => {
               <div className="flex gap-1 bg-white p-1 rounded-xl border border-gray-200">
                 <button
                   onClick={() => carregarHistorico(paginaAtual - 1, temaSelecionado)}
+                  aria-label="Página anterior"
                   disabled={paginaAtual === 1}
                   className="w-8 h-8 flex items-center justify-center rounded-lg text-[#0A1128] hover:bg-gray-50 disabled:opacity-30"
                 >
@@ -281,6 +317,7 @@ export const HistoricoPage = () => {
 
                 <button
                   onClick={() => carregarHistorico(paginaAtual + 1, temaSelecionado)}
+                  aria-label="Próxima página"
                   disabled={paginaAtual >= totalPaginas}
                   className="w-8 h-8 flex items-center justify-center rounded-lg text-[#0A1128] hover:bg-gray-50 disabled:opacity-30"
                 >

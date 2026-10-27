@@ -159,6 +159,7 @@ export const ResponderQuizPage = () => {
         resultado={resultado}
         onJogarDeNovo={handleJogarDeNovo}
         onVoltar={() => navigate("/aluno/quiz/escolha")}
+        onRevisarErros={() => navigate("/aluno/historico?aba=erros")}
       />
       </>
     );

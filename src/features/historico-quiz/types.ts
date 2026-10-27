@@ -14,6 +14,7 @@ export type HistoricoQuestaoDetalhe = {
   respostaCorreta: string;
   dificuldade: string;
   saibaMais: string | null;
+  urlImagem?: string | null;
   alternativas: Record<string, string> | null;
 };
 

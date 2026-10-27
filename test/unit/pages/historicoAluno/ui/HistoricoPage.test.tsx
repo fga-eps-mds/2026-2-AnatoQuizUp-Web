@@ -94,6 +94,23 @@ describe('HistoricoPage', () => {
     );
   });
 
+  it('mostra apenas erros ao abrir a revisão pela URL', async () => {
+    (historicoService.buscarHistoricoQuiz as jest.Mock).mockResolvedValue({
+      dados: [{ ...itemHistoricoBase, respostaMarcada: 'C' }],
+      metadados: { page: 1, limit: 50, total: 1, totalPages: 1 },
+    });
+
+    render(<MemoryRouter initialEntries={['/aluno/historico?aba=erros']}><HistoricoPage /></MemoryRouter>);
+
+    await waitFor(() => expect(screen.getByText('Questão Teste 1')).toBeInTheDocument());
+    expect(historicoService.buscarHistoricoQuiz).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1, limit: 50, somenteErros: true }),
+    );
+    expect(screen.getByText(/Sua resposta:/)).toHaveTextContent('C Errada');
+    expect(screen.getByText(/Resposta correta:/)).toHaveTextContent('E Certa');
+    expect(screen.getByText('Explicação teste')).toBeInTheDocument();
+  });
+
   it('deve agrupar duas respostas na mesma sessão', async () => {
     (historicoService.buscarHistoricoQuiz as jest.Mock).mockResolvedValue({
       dados: [
@@ -413,7 +430,7 @@ describe('HistoricoPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Sessões de prática' }));
 
-    expect(screen.getByText('23/05/2026')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('23/05/2026')).toBeInTheDocument());
     expect(screen.queryByTestId('historico-xp')).not.toBeInTheDocument();
   });
 });

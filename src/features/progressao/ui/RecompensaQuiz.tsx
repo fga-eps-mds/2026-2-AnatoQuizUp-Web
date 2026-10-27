@@ -11,6 +11,7 @@ type RecompensaQuizProps = {
   resultado: ResultadoTentativa;
   onJogarDeNovo: () => void;
   onVoltar: () => void;
+  onRevisarErros?: () => void;
 };
 
 const formatar = (valor: number) => valor.toLocaleString('pt-BR');
@@ -28,7 +29,7 @@ const LinhaXp = ({ rotulo, valor }: { rotulo: string; valor: number }) => (
  * acumulado, nivel/elo atual e, quando houver, a celebracao de novo nivel
  * e de novo elo conquistado (Telas 4 e 5 do Figma).
  */
-export const RecompensaQuiz = ({ resultado, onJogarDeNovo, onVoltar }: RecompensaQuizProps) => {
+export const RecompensaQuiz = ({ resultado, onJogarDeNovo, onVoltar, onRevisarErros }: RecompensaQuizProps) => {
   const { recompensa, progresso } = resultado;
   const [mostrarJornadaElos, setMostrarJornadaElos] = useState(false);
   const [celebracaoEloFechada, setCelebracaoEloFechada] = useState(false);
@@ -133,6 +134,11 @@ export const RecompensaQuiz = ({ resultado, onJogarDeNovo, onVoltar }: Recompens
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            {resultado.totalAcertos < resultado.totalQuestoes && onRevisarErros && (
+              <button type="button" onClick={onRevisarErros} className="w-full rounded-full border border-rose-200 bg-rose-50 px-6 py-3 text-xs font-bold uppercase tracking-wide text-rose-800 hover:bg-rose-100">
+                Revisar meus erros
+              </button>
+            )}
             <button
               type="button"
               onClick={onVoltar}

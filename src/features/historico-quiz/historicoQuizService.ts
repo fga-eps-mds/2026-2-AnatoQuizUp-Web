@@ -9,6 +9,7 @@ export type BuscarHistoricoParams = {
   limit: number;
   tema?: string;
   dificuldade?: string;
+  somenteErros?: boolean;
 };
 
 // GET /quiz/historico — busca o historico paginado/filtrado de respostas do aluno.
