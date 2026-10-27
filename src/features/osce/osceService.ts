@@ -47,17 +47,63 @@ export const enviarMensagemOsce = async (
   }
 };
 
-// POST /ia/osce/:id/finalizar — encerra a simulacao e devolve o feedback do examinador.
+// Niveis de desempenho da rubrica (capitulo 14 do Practical Guide): competente,
+// parcial (metade do peso) e nao realizado.
+export type NivelDesempenho = 'competente' | 'parcial' | 'nao_realizado';
+
+// Faixa em que o percentual do checklist caiu.
+export type NivelChecklist = 'excelente' | 'bom' | 'suficiente' | 'limitrofe' | 'insuficiente';
+
+export type ItemAvaliado = {
+  id: string;
+  dominio: string;
+  descricao: string;
+  // Ancoras comportamentais por nivel de credito: onde fica a linha entre credito
+  // cheio e credito parcial. Item sem `parcial` nao tem meio-termo.
+  ancoras: { competente: string; parcial?: string };
+  peso: number;
+  permiteParcial: boolean;
+  // Item critico: falhar nele limita a nota global, por melhor que seja o resto.
+  critico?: boolean;
+  nivel: NivelDesempenho;
+  justificativa: string;
+  pontos: number;
+  pontosMaximos: number;
+};
+
+export type AvaliacaoOsce = {
+  cenarioId: string;
+  titulo: string;
+  diagnosticoEsperado: string;
+  comentarioFinal: string;
+  itens: ItemAvaliado[];
+  pontuacao: number;
+  pontuacaoMaxima: number;
+  percentual: number;
+  nivelChecklist: NivelChecklist;
+  rotuloChecklist: string;
+  // Nota global (0-4) julgada pelo examinador sem olhar a soma do checklist.
+  notaGlobal: number;
+  rotuloNotaGlobal: string;
+  ancoraNotaGlobal: string;
+  justificativaNotaGlobal: string;
+  aprovado: boolean;
+  itensCriticosNaoCumpridos: string[];
+  // true quando checklist e nota global discordam demais: pede revisao humana.
+  divergente: boolean;
+};
+
+// POST /ia/osce/:id/finalizar — encerra a simulacao e devolve a rubrica pontuada.
 export const finalizarOsce = async (
   cenarioId: string,
   historico: TurnoOsce[],
-): Promise<string> => {
+): Promise<AvaliacaoOsce> => {
   try {
-    const { data } = await httpClient.post<{ feedback: string }>(
+    const { data } = await httpClient.post<{ avaliacao: AvaliacaoOsce }>(
       `${OSCE_ENDPOINT}/${cenarioId}/finalizar`,
       { historico },
     );
-    return data.feedback;
+    return data.avaliacao;
   } catch (error) {
     throw new Error(extractErrorMessage(error));
   }

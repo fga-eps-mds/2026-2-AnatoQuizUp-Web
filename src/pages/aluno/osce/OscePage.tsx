@@ -1,6 +1,6 @@
 // Pagina de simulacao OSCE: aluno escolhe um caso clinico, conversa em papel de
-// medico com o "paciente" (Gemini, via BFF) e, ao finalizar, recebe o feedback do
-// examinador contra o checklist do caso. Ver docs/arquitetura/chatbot-osce.md.
+// medico com o "paciente" (Gemini, via BFF) e, ao finalizar, recebe a rubrica
+// pontuada do examinador. Ver docs/arquitetura/chatbot-osce.md.
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { ClipboardList, Loader2, Send, Stethoscope } from 'lucide-react';
 
@@ -8,9 +8,11 @@ import {
   enviarMensagemOsce,
   finalizarOsce,
   listarCenariosOsce,
+  type AvaliacaoOsce,
   type CenarioOsceResumo,
   type TurnoOsce,
 } from '../../../features/osce/osceService';
+import { RubricaResultado } from './RubricaResultado';
 
 // Converte **trecho** em <strong>, mesmo marcador usado pelo chat de ajuda.
 function renderizarTextoComNegrito(texto: string) {
@@ -37,7 +39,7 @@ export const OscePage = () => {
   const [historico, setHistorico] = useState<TurnoOsce[]>([]);
   const [mensagemAtual, setMensagemAtual] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [avaliacao, setAvaliacao] = useState<AvaliacaoOsce | null>(null);
   const [finalizando, setFinalizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -52,19 +54,19 @@ export const OscePage = () => {
 
   useEffect(() => {
     fimDaConversaRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [historico, feedback]);
+  }, [historico, avaliacao]);
 
   const iniciarCenario = (cenario: CenarioOsceResumo) => {
     setCenarioAtivo(cenario);
     setHistorico([]);
-    setFeedback(null);
+    setAvaliacao(null);
     setErro(null);
   };
 
   const encerrarSimulacao = () => {
     setCenarioAtivo(null);
     setHistorico([]);
-    setFeedback(null);
+    setAvaliacao(null);
     setErro(null);
   };
 
@@ -97,7 +99,7 @@ export const OscePage = () => {
 
     try {
       const resultado = await finalizarOsce(cenarioAtivo.id, historico);
-      setFeedback(resultado);
+      setAvaliacao(resultado);
     } catch (error) {
       setErro((error as Error).message);
     } finally {
@@ -165,7 +167,7 @@ export const OscePage = () => {
               <button
                 type="button"
                 onClick={() => void handleFinalizar()}
-                disabled={historico.length === 0 || finalizando || Boolean(feedback)}
+                disabled={historico.length === 0 || finalizando || Boolean(avaliacao)}
                 className="flex items-center gap-1.5 rounded-lg bg-[#0A1128] px-3 py-1.5 text-xs font-bold text-white hover:brightness-110 disabled:opacity-40"
               >
                 {finalizando ? (
@@ -173,7 +175,7 @@ export const OscePage = () => {
                 ) : (
                   <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
-                Finalizar e ver feedback
+                Finalizar e ver rubrica
               </button>
               <button
                 type="button"
@@ -211,17 +213,7 @@ export const OscePage = () => {
               ))}
             </ul>
 
-            {feedback && (
-              <div className="mt-5 rounded-lg border border-[#0D9488]/30 bg-[#0D9488]/5 p-4">
-                <p className="mb-1.5 flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-[#0D9488]">
-                  <ClipboardList className="h-3.5 w-3.5" aria-hidden="true" />
-                  Feedback do examinador
-                </p>
-                <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-[#0A1128]/80">
-                  {renderizarTextoComNegrito(feedback)}
-                </p>
-              </div>
-            )}
+            {avaliacao && <RubricaResultado avaliacao={avaliacao} />}
 
             {erro && (
               <p role="alert" className="mt-3 text-sm font-medium text-rose-600">
@@ -245,13 +237,13 @@ export const OscePage = () => {
               placeholder="Pergunte algo ao paciente..."
               rows={1}
               maxLength={500}
-              disabled={enviando || Boolean(feedback)}
+              disabled={enviando || Boolean(avaliacao)}
               className="flex-1 resize-none rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm font-medium text-[#0A1128] placeholder:text-[#94A3B8] focus:border-[#0D9488] focus:outline-none disabled:opacity-60"
             />
             <button
               type="button"
               onClick={() => void handleEnviarMensagem()}
-              disabled={!mensagemAtual.trim() || enviando || Boolean(feedback)}
+              disabled={!mensagemAtual.trim() || enviando || Boolean(avaliacao)}
               aria-label="Enviar pergunta ao paciente"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0D9488] text-white hover:brightness-95 disabled:opacity-40"
             >
