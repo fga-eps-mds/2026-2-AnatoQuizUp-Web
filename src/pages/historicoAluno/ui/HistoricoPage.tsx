@@ -78,32 +78,34 @@ export const HistoricoPage = () => {
   // Recarrega a primeira pagina quando tema ou modo de revisao muda.
   useEffect(() => {
     let deveAtualizarEstado = true;
-    setIsLoading(true);
-    setErroCarregamento(false);
 
-    buscarHistoricoQuiz({
-      page: 1,
-      limit,
-      tema: temaSelecionado !== 'Todos' ? temaSelecionado : undefined,
-      ...(aba === 'erros' && { somenteErros: true }),
-    })
-      .then((response) => {
+    const carregarPrimeiraPagina = async () => {
+      setIsLoading(true);
+      setErroCarregamento(false);
+
+      try {
+        const response = await buscarHistoricoQuiz({
+          page: 1,
+          limit,
+          tema: temaSelecionado !== 'Todos' ? temaSelecionado : undefined,
+          ...(aba === 'erros' && { somenteErros: true }),
+        });
+
         if (!deveAtualizarEstado) return;
 
         setHistoricoBruto(response.dados);
         setTotalItens(response.metadados.total);
         setTotalPaginas(response.metadados.totalPages);
         setPaginaAtual(1);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Erro ao buscar histórico:', error);
         if (deveAtualizarEstado) setErroCarregamento(true);
-      })
-      .finally(() => {
-        if (!deveAtualizarEstado) return;
+      } finally {
+        if (deveAtualizarEstado) setIsLoading(false);
+      }
+    };
 
-        setIsLoading(false);
-      });
+    void carregarPrimeiraPagina();
 
     return () => {
       deveAtualizarEstado = false;
