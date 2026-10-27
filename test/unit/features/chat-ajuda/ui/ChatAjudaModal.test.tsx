@@ -185,7 +185,7 @@ describe('ChatAjudaModal', () => {
     fireEvent.mouseDown(screen.getByRole('dialog'));
     expect(onClose).toHaveBeenCalledTimes(1);
 
-    fireEvent.mouseDown(screen.getByRole('presentation'));
+    fireEvent.mouseDown(screen.getByTestId('chat-ajuda-overlay'));
     expect(onClose).toHaveBeenCalledTimes(2);
 
     await userEvent.keyboard('{Escape}');

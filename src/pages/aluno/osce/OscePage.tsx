@@ -1,7 +1,7 @@
 // Pagina de simulacao OSCE: aluno escolhe um caso clinico, conversa em papel de
 // medico com o "paciente" (Gemini, via BFF) e, ao finalizar, recebe o feedback
 // pontuada do examinador. Ver docs/arquitetura/chatbot-osce.md.
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ClipboardList, Loader2, Send, Stethoscope } from 'lucide-react';
 
 import {
@@ -12,17 +12,20 @@ import {
   type CenarioOsceResumo,
   type TurnoOsce,
 } from '../../../features/osce/osceService';
+import { renderizarTextoComNegrito } from '../../../shared/utils/textoComNegrito';
 import { FeedbackResultado } from './FeedbackResultado';
 
-// Converte **trecho** em <strong>, mesmo marcador usado pelo chat de ajuda.
-function renderizarTextoComNegrito(texto: string) {
-  return texto.split(/(\*\*[^*]+\*\*)/g).map((trecho, indice) => {
-    if (trecho.startsWith('**') && trecho.endsWith('**')) {
-      return <strong key={indice}>{trecho.slice(2, -2)}</strong>;
-    }
-    return <Fragment key={indice}>{trecho}</Fragment>;
-  });
-}
+// Turno como a tela guarda: o id existe so para a chave da lista e nao vai para o
+// BFF, que recebe apenas autor e texto.
+type TurnoExibido = TurnoOsce & { id: string };
+
+const novoTurno = (autor: TurnoOsce['autor'], texto: string): TurnoExibido => ({
+  id: `${autor}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  autor,
+  texto,
+});
+
+const paraEnvio = ({ autor, texto }: TurnoExibido): TurnoOsce => ({ autor, texto });
 
 const CORES_DIFICULDADE: Record<CenarioOsceResumo['dificuldade'], string> = {
   Fácil: 'bg-emerald-100 text-emerald-700',
@@ -36,7 +39,7 @@ export const OscePage = () => {
   const [erroCenarios, setErroCenarios] = useState<string | null>(null);
 
   const [cenarioAtivo, setCenarioAtivo] = useState<CenarioOsceResumo | null>(null);
-  const [historico, setHistorico] = useState<TurnoOsce[]>([]);
+  const [historico, setHistorico] = useState<TurnoExibido[]>([]);
   const [mensagemAtual, setMensagemAtual] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [avaliacao, setAvaliacao] = useState<AvaliacaoOsce | null>(null);
@@ -78,12 +81,16 @@ export const OscePage = () => {
     setErro(null);
 
     const historicoAnterior = historico;
-    setHistorico((atual) => [...atual, { autor: 'aluno', texto }]);
+    setHistorico((atual) => [...atual, novoTurno('aluno', texto)]);
     setMensagemAtual('');
 
     try {
-      const resposta = await enviarMensagemOsce(cenarioAtivo.id, texto, historicoAnterior);
-      setHistorico((atual) => [...atual, { autor: 'paciente', texto: resposta }]);
+      const resposta = await enviarMensagemOsce(
+        cenarioAtivo.id,
+        texto,
+        historicoAnterior.map(paraEnvio),
+      );
+      setHistorico((atual) => [...atual, novoTurno('paciente', resposta)]);
     } catch (error) {
       setErro((error as Error).message);
     } finally {
@@ -98,7 +105,7 @@ export const OscePage = () => {
     setErro(null);
 
     try {
-      const resultado = await finalizarOsce(cenarioAtivo.id, historico);
+      const resultado = await finalizarOsce(cenarioAtivo.id, historico.map(paraEnvio));
       setAvaliacao(resultado);
     } catch (error) {
       setErro((error as Error).message);
@@ -195,9 +202,9 @@ export const OscePage = () => {
             )}
 
             <ul className="flex flex-col gap-3">
-              {historico.map((turno, indice) => (
+              {historico.map((turno) => (
                 <li
-                  key={indice}
+                  key={turno.id}
                   className={`flex flex-col gap-1.5 ${turno.autor === 'aluno' ? 'items-end' : 'items-start'}`}
                 >
                   <p

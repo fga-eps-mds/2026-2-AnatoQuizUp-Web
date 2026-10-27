@@ -1,27 +1,17 @@
 // Modal de ajuda: mostra a dica de estudo baseada no desempenho do proprio aluno
 // (regra, sem LLM) e permite perguntas livres respondidas pela Gemini API - ver
 // docs/arquitetura/chatbot-ajuda-ia.md.
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, MessageCircleQuestion, SendHorizontal, X } from 'lucide-react';
 
 import { buscarDicaAjuda, enviarPerguntaAjuda, type ContextoQuestaoAjuda } from '../chatAjudaService';
+import { renderizarTextoComNegrito } from '../../../shared/utils/textoComNegrito';
 
 type TrocaChat = {
   id: string;
   pergunta: string;
   resposta: string;
 };
-
-// Converte **trecho** em <strong>, unico marcador markdown que a Gemini usa nas
-// respostas; o resto do texto segue plano.
-function renderizarTextoComNegrito(texto: string) {
-  return texto.split(/(\*\*[^*]+\*\*)/g).map((trecho, indice) => {
-    if (trecho.startsWith('**') && trecho.endsWith('**')) {
-      return <strong key={indice}>{trecho.slice(2, -2)}</strong>;
-    }
-    return <Fragment key={indice}>{trecho}</Fragment>;
-  });
-}
 
 type ChatAjudaModalProps = {
   onClose: () => void;
@@ -85,16 +75,16 @@ export const ChatAjudaModal = ({ onClose, questaoAtual }: ChatAjudaModalProps) =
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1128]/55 p-4 backdrop-blur-[2px]"
+      data-testid="chat-ajuda-overlay"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
-      role="presentation"
     >
-      <section
-        role="dialog"
+      <dialog
+        open
         aria-modal="true"
         aria-labelledby="chat-ajuda-title"
-        className="flex max-h-[85vh] w-full max-w-md flex-col rounded-lg bg-white shadow-2xl"
+        className="m-0 flex max-h-[85vh] w-full max-w-md flex-col rounded-lg bg-white p-0 shadow-2xl"
       >
         <header className="flex items-center justify-between border-b border-[#E2E8F0] px-5 py-4">
           <div className="flex items-center gap-2">
@@ -185,7 +175,7 @@ export const ChatAjudaModal = ({ onClose, questaoAtual }: ChatAjudaModalProps) =
             )}
           </button>
         </footer>
-      </section>
+      </dialog>
     </div>
   );
 };
