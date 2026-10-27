@@ -1,11 +1,11 @@
 // Servico de autenticacao falso (mock) usado em desenvolvimento/testes sem backend.
 import type { User } from '../../../entities/user/model/types';
 import type { LoginResponse } from './authService';
+import { AVATAR_DEMO_PASSWORD } from '../../../shared/config/env';
 
 // E-mails de teste que disparam comportamentos especificos no mock.
 const STUDENT_EMAIL = 'aluno@unb.br';
 const AVATAR_DEMO_EMAIL = 'avatar@anatoquizup.local';
-const AVATAR_DEMO_PASSWORD = 'Avatar2026!';
 const PROFESSOR_EMAIL = 'professor@unb.br';
 const DISABLED_EMAIL = 'desativado@unb.br';
 
@@ -98,7 +98,8 @@ export const loginWithMockCredencials = async (
   const normalizedEmail = email.trim().toLowerCase();
 
   if (normalizedEmail === AVATAR_DEMO_EMAIL) {
-    if (password !== AVATAR_DEMO_PASSWORD) throw new Error('Email ou senha invalidos');
+    if (AVATAR_DEMO_PASSWORD && password !== AVATAR_DEMO_PASSWORD)
+      throw new Error('Email ou senha invalidos');
     authenticatedMockUser = AVATAR_DEMO_USER;
     return AVATAR_DEMO_TOKENS;
   }
