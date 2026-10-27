@@ -40,6 +40,7 @@ import { EditarPerfilPage } from "../pages/aluno/perfil/editar";
 import { LojaPage } from "../pages/aluno/loja";
 import { MissoesPage } from "../pages/aluno/missoes/MissoesPage";
 import { ConquistasPage } from "../pages/aluno/conquistas";
+import { OscePage } from "../pages/aluno/osce/OscePage";
 
 import { NotFoundPage } from '../pages/not-found';
 
@@ -202,6 +203,15 @@ export const AppRouter = () => {
         />
 
         <Route path="/aluno/missoes" element={<ProtectedRoute allowedRoles={['STUDENT']}><MissoesPage /></ProtectedRoute>} />
+
+        <Route
+          path="/aluno/osce"
+          element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <OscePage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Fluxo de quiz avulso e historico do aluno. */}
         <Route

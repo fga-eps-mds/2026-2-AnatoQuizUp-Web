@@ -18,8 +18,10 @@ import {
   Flag,
   Coins,
   Zap,
+  MessageCircleQuestion,
 } from "lucide-react";
 
+import { ChatAjudaModal } from "../../../features/chat-ajuda/ui/ChatAjudaModal";
 import { responderQuestaoQuiz } from "../../../features/random-quiz/randomQuizService";
 import {
   concluirTentativaQuiz,
@@ -57,6 +59,8 @@ export const ResponderQuizPage = () => {
   const [erroResposta, setErroResposta] = useState<string | null>(null);
   // Incrementado em "Jogar de novo" para iniciar outra rodada com os mesmos filtros.
   const [rodada, setRodada] = useState(0);
+  // Controla a exibicao do modal de ajuda (dica baseada no desempenho do aluno).
+  const [chatAjudaAberto, setChatAjudaAberto] = useState(false);
 
   // Questoes da rodada e o feedback da questao respondida (se houver).
   const [questoes, setQuestoes] = useState<QuizQuestion[]>([]);
@@ -302,13 +306,35 @@ export const ResponderQuizPage = () => {
     <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-6 flex flex-col items-center">
       <div className="w-full max-w-5xl">
         {missoesConcluidas.map((m) => <output aria-live="polite" key={m.nome} className="mb-4 block rounded-xl bg-[#e6f8f5] p-4 font-bold text-[#139a8a]">Missão concluída: {m.nome} · +{m.recompensaXp} XP</output>)}
-        <button
-          onClick={() => navigate("/aluno/quiz/escolha")}
-          title="Sair antes de concluir a rodada não concede XP"
-          className="flex items-center gap-2 text-[11px] text-rose-500/70 hover:text-rose-600 font-black uppercase tracking-wide mb-4 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Sair do quiz
-        </button>
+
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => navigate("/aluno/quiz/escolha")}
+            title="Sair antes de concluir a rodada não concede XP"
+            className="flex items-center gap-2 text-[11px] text-rose-500/70 hover:text-rose-600 font-black uppercase tracking-wide transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Sair do quiz
+          </button>
+
+          <button
+            onClick={() => setChatAjudaAberto(true)}
+            title="Receber uma dica com base no seu desempenho"
+            className="flex items-center gap-1.5 text-[11px] text-[#0D9488] hover:text-[#0A1128] font-black uppercase tracking-wide transition-colors"
+          >
+            <MessageCircleQuestion className="w-3.5 h-3.5" /> Ajuda
+          </button>
+        </div>
+
+        {chatAjudaAberto && (
+          <ChatAjudaModal
+            onClose={() => setChatAjudaAberto(false)}
+            questaoAtual={{
+              tema: questaoAtual.tema?.nome,
+              dificuldade: questaoAtual.dificuldade,
+              enunciado: questaoAtual.enunciado,
+            }}
+          />
+        )}
 
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-4 flex justify-between items-center gap-4">
           <div className="flex-1">
