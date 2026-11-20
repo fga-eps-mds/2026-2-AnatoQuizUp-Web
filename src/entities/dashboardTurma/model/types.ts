@@ -62,3 +62,31 @@ export type DesempenhoListaIndividual = {
   totalQuestoes: number;
   desempenhoAlunos: AlunoDesempenhoLista[];
 };
+
+export type ResultadoQuestaoEntrega = 'ACERTO' | 'ERRO' | 'NAO_RESPONDIDA';
+
+export type DetalheQuestaoEntrega = {
+  ordem: number;
+  questaoId: string;
+  enunciado: string;
+  respostaAluno: { alternativa: string; texto: string } | null;
+  resultado: ResultadoQuestaoEntrega;
+  gabarito: { alternativa: string; texto: string } | null;
+};
+
+export type DetalheEntrega = {
+  lista: {
+    id: string;
+    nome: string;
+    publicadaEm: string;
+  };
+  alunoId: string;
+  resumo: {
+    totalQuestoes: number;
+    acertos: number;
+    erros: number;
+    naoRespondidas: number;
+    taxaAcerto: number;
+  };
+  questoes: DetalheQuestaoEntrega[];
+};
