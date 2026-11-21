@@ -90,3 +90,29 @@ export type DetalheEntrega = {
   };
   questoes: DetalheQuestaoEntrega[];
 };
+
+export type StatusResultadoTema = 'SUBMETIDA' | 'EM_ANDAMENTO' | 'NAO_RESPONDEU';
+
+export type ResultadoTemaLista = {
+  listaTurmaId: string;
+  nomeLista: string;
+  publicadaEm: string;
+  status: StatusResultadoTema;
+  acertos: number | null;
+  totalQuestoes: number;
+  taxaAcerto: number | null;
+  variacaoPp: number | null;
+};
+
+export type EvolucaoTema = {
+  temaId: string;
+  nome: string;
+  totalResultadosValidos: number;
+  mensagem: string | null;
+  resultados: ResultadoTemaLista[];
+};
+
+export type EvolucaoTemasAluno = {
+  alunoId: string;
+  temas: EvolucaoTema[];
+};
