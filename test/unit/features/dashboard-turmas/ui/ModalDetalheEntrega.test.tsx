@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { buscarDetalheEntrega } from '../../../entities/dashboardTurma/api/dashboardTurmaApi';
-import { ModalDetalheEntrega } from './ModalDetalheEntrega';
+import { buscarDetalheEntrega } from '../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi';
+import { ModalDetalheEntrega } from '../../../../../src/features/dashboard-turmas/ui/ModalDetalheEntrega';
 
-jest.mock('../../../entities/dashboardTurma/api/dashboardTurmaApi', () => ({
+jest.mock('../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi', () => ({
   buscarDetalheEntrega: jest.fn(),
 }));
 
