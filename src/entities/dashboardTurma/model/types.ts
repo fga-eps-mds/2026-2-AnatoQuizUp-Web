@@ -62,3 +62,22 @@ export type DesempenhoListaIndividual = {
   totalQuestoes: number;
   desempenhoAlunos: AlunoDesempenhoLista[];
 };
+
+// Questao ranqueada entre as que tiveram mais erros em uma lista.
+export type QuestaoTopErro = {
+  questaoId: string;
+  numeroQuestao: number;
+  enunciado: string;
+  tema: string;
+  totalErros: number;
+  totalRespostas: number;
+  percentualErro: number;
+};
+
+// Ranking das questoes com mais erros em uma lista especifica.
+export type TopErrosLista = {
+  listaTurmaId: string;
+  nomeLista: string;
+  totalAlunosResponderam: number;
+  questoes: QuestaoTopErro[];
+};

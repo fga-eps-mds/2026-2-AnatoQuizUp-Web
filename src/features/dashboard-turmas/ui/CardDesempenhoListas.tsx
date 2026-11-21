@@ -17,6 +17,7 @@ import {
 } from '../../../entities/dashboardTurma/api/dashboardTurmaApi';
 import { buscarUsuariosPorIds } from '../../../entities/usuarios/api/usuarioApi';
 import type { DesempenhoLista, DesempenhoListaIndividual } from '../../../entities/dashboardTurma/model/types';
+import { ModalTopErros } from './ModalTopErros';
 
 interface CardDesempenhoListasProps {
   turmaId: string;
@@ -195,14 +196,16 @@ const ModalAlunos = ({ turmaId, listaId, onClose }: { turmaId: string, listaId: 
 
 /**
  * Card do dashboard do professor com o desempenho por lista publicada na turma.
- * Lista as publicacoes com taxa de submissao/acerto e abre o modal de detalhe por aluno.
+ * Lista as publicacoes com taxa de submissao/acerto e abre os modais de detalhe
+ * por aluno e de questoes com mais erros.
  */
 export const CardDesempenhoListas = ({ turmaId }: CardDesempenhoListasProps) => {
-  // Listas com desempenho agregado, estado de carga/erro e lista aberta no modal.
+  // Listas com desempenho agregado, estado de carga/erro e listas abertas nos modais.
   const [listas, setListas] = useState<DesempenhoLista[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [listaSelecionadaId, setListaSelecionadaId] = useState<string | null>(null);
+  const [listaTopErros, setListaTopErros] = useState<DesempenhoLista | null>(null);
 
   // Busca o desempenho por lista da turma; memoizado para uso no efeito e no retry.
   const carregarDesempenho = useCallback(async () => {
@@ -341,12 +344,20 @@ export const CardDesempenhoListas = ({ turmaId }: CardDesempenhoListasProps) => 
                 </div>
               </div>
               
-              <button 
+              <button
                 onClick={() => setListaSelecionadaId(lista.listaTurmaId)}
                 className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-white border border-gray-200 py-2 text-[12px] font-bold text-teal-600 hover:bg-teal-50 hover:border-teal-200 transition-colors"
               >
-                <Eye size={14} />
-                Ver desempenho dos alunos
+                <Eye size={14} /> Ver desempenho dos alunos
+              </button>
+
+              {/* Botao para abrir o modal de questoes com mais erros desta lista. */}
+              <button
+                type="button"
+                onClick={() => setListaTopErros(lista)}
+                className="mt-2 w-full flex items-center justify-center gap-2 rounded-lg bg-white border border-gray-200 py-2 text-[12px] font-bold text-teal-600 hover:bg-teal-50 hover:border-teal-200 transition-colors"
+              >
+                Ver questões com mais erros
               </button>
 
             </li>
@@ -360,6 +371,16 @@ export const CardDesempenhoListas = ({ turmaId }: CardDesempenhoListasProps) => 
           turmaId={turmaId} 
           listaId={listaSelecionadaId} 
           onClose={() => setListaSelecionadaId(null)} 
+        />
+      )}
+
+      {/* Modal de questoes com mais erros da lista selecionada. */}
+      {listaTopErros && (
+        <ModalTopErros
+          turmaId={turmaId}
+          listaId={listaTopErros.listaTurmaId}
+          nomeLista={listaTopErros.nomeLista}
+          onClose={() => setListaTopErros(null)}
         />
       )}
 

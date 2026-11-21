@@ -1,6 +1,10 @@
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { buscarDesempenhoPorListas, buscarDesempenhoListaIndividual } from '../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi';
+import {
+  buscarDesempenhoPorListas,
+  buscarDesempenhoListaIndividual,
+  buscarTopErrosLista,
+} from '../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi';
 import { buscarUsuariosPorIds } from '../../../../../src/entities/usuarios/api/usuarioApi';
 import { CardDesempenhoListas } from '../../../../../src/features/dashboard-turmas/ui/CardDesempenhoListas';
 import type { UsuarioResumo } from '../../../../../src/entities/usuarios/model/types';
@@ -8,6 +12,7 @@ import type { UsuarioResumo } from '../../../../../src/entities/usuarios/model/t
 jest.mock('../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi', () => ({
   buscarDesempenhoPorListas: jest.fn(),
   buscarDesempenhoListaIndividual: jest.fn(),
+  buscarTopErrosLista: jest.fn(),
 }));
 
 jest.mock('../../../../../src/entities/usuarios/api/usuarioApi', () => ({
@@ -17,6 +22,7 @@ jest.mock('../../../../../src/entities/usuarios/api/usuarioApi', () => ({
 const mockedBuscarDesempenhoPorListas = jest.mocked(buscarDesempenhoPorListas);
 const mockedBuscarDesempenhoListaIndividual = jest.mocked(buscarDesempenhoListaIndividual);
 const mockedBuscarUsuariosPorIds = jest.mocked(buscarUsuariosPorIds);
+const mockedBuscarTopErrosLista = jest.mocked(buscarTopErrosLista);
 
 describe('CardDesempenhoListas', () => {
   beforeEach(() => {
@@ -193,5 +199,45 @@ describe('CardDesempenhoListas', () => {
       expect(screen.getByText('Pedro Cabeceira')).toBeInTheDocument();
       expect(screen.getByText('10')).toBeInTheDocument();
     });
+  });
+
+  it('deve abrir o modal de questoes com mais erros com os dados da lista', async () => {
+    mockedBuscarDesempenhoPorListas.mockResolvedValue([
+      {
+        listaTurmaId: 'lista-turma-1',
+        nomeLista: 'Simulado de Anatomia',
+        totalAlunos: 18,
+        totalSubmeteram: 11,
+        totalPendentes: 7,
+        taxaMediaAcerto: 73.4,
+        prazo: null,
+      },
+    ]);
+    mockedBuscarTopErrosLista.mockResolvedValue({
+      listaTurmaId: 'lista-turma-1',
+      nomeLista: 'Simulado de Anatomia',
+      totalAlunosResponderam: 11,
+      questoes: [],
+    });
+
+    render(<CardDesempenhoListas turmaId="turma-123" />);
+
+    const botao = await screen.findByRole('button', { name: 'Ver questões com mais erros' });
+    fireEvent.click(botao);
+
+    expect(screen.getByRole('heading', { name: 'Questões com mais erros' })).toBeInTheDocument();
+    expect(screen.getAllByText('Simulado de Anatomia')).toHaveLength(2);
+    await waitFor(() => {
+      expect(mockedBuscarTopErrosLista).toHaveBeenCalledWith(
+        'turma-123',
+        'lista-turma-1',
+      );
+    });
+    expect(
+      await screen.findByText('Nenhuma questão recebeu respostas erradas nesta lista.'),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '✕' }));
+    expect(screen.queryByRole('heading', { name: 'Questões com mais erros' })).not.toBeInTheDocument();
   });
 });

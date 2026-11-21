@@ -1,7 +1,13 @@
-// Cliente de API do dashboard de desempenho de turmas. Expoe as quatro visoes
+// Cliente de API do dashboard de desempenho de turmas. Expoe as cinco visoes
 // usadas pelo professor: indicadores macro da turma, desempenho individual dos
-// alunos, desempenho por lista e o detalhe de uma lista especifica.
-import type { DesempenhoListaIndividual, DashboardIndividual, DashboardMacro, DesempenhoLista } from '../model/types';
+// alunos, desempenho por lista, o detalhe de uma lista especifica e o top erros.
+import type {
+  DesempenhoListaIndividual,
+  DashboardIndividual,
+  DashboardMacro,
+  DesempenhoLista,
+  TopErrosLista,
+} from '../model/types';
 import { httpClient } from '../../../shared/api/httpClient';
 
 // GET /turmasDashboard/:turmaId/macro — indicadores agregados da turma.
@@ -31,3 +37,11 @@ export const buscarDesempenhoListaIndividual = async (
   return data;
 };
 
+// GET /turmasDashboard/:turmaId/listas/:listaId/top-erros — ranking de questoes com mais erros.
+export const buscarTopErrosLista = async (
+  turmaId: string,
+  listaId: string
+): Promise<TopErrosLista> => {
+  const { data } = await httpClient.get(`/turmasDashboard/${turmaId}/listas/${listaId}/top-erros`);
+  return data;
+};
