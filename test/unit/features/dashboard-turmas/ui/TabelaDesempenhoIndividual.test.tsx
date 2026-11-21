@@ -12,6 +12,10 @@ jest.mock('../../../../../src/entities/usuarios/api/usuarioApi', () => ({
   buscarUsuariosPorIds: jest.fn(),
 }));
 
+jest.mock('../../../../../src/features/dashboard-turmas/ui/EvolucaoTemaAluno', () => ({
+  EvolucaoTemaAluno: () => <div>Evolução por tema carregada</div>,
+}));
+
 const mockBuscarIndividual = buscarDesempenhoIndividual as jest.Mock;
 const mockBuscarUsuarios = buscarUsuariosPorIds as jest.Mock;
 
@@ -93,9 +97,8 @@ describe('TabelaDesempenhoIndividual', () => {
 
     await user.click(await screen.findByText('João Silva'));
 
-    expect(screen.getByText('Desempenho por Tema')).toBeInTheDocument();
-    expect(screen.getByText('Tórax')).toBeInTheDocument();
-    expect(screen.getByText('90%')).toBeInTheDocument();
+    expect(screen.getByText('Evolução por tema')).toBeInTheDocument();
+    expect(screen.getByText('Evolução por tema carregada')).toBeInTheDocument();
   });
 
   it('deve exibir os cards de resumo no modal', async () => {
@@ -120,16 +123,16 @@ describe('TabelaDesempenhoIndividual', () => {
 
     await user.click(await screen.findByText('João Silva'));
 
-    expect(screen.getByText('Desempenho por Tema')).toBeInTheDocument();
+    expect(screen.getByText('Evolução por tema')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Fechar detalhes do aluno' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('Desempenho por Tema')).not.toBeInTheDocument();
+      expect(screen.queryByText('Evolução por tema')).not.toBeInTheDocument();
     });
   });
 
-  it('deve exibir mensagem quando o aluno não tem temas respondidos no modal', async () => {
+  it('deve carregar a evolucao mesmo quando o resumo anterior nao tem temas', async () => {
     const user = userEvent.setup();
     mockBuscarIndividual.mockResolvedValue({
       alunos: [{ ...alunoStats, desempenhoPorTema: [] }],
@@ -140,7 +143,7 @@ describe('TabelaDesempenhoIndividual', () => {
 
     await user.click(await screen.findByText('João Silva'));
 
-    expect(screen.getByText('Nenhuma questão respondida ainda.')).toBeInTheDocument();
+    expect(screen.getByText('Evolução por tema carregada')).toBeInTheDocument();
   });
 
   it('deve formatar a última atividade como "Hoje", "Ontem", data antiga e traço', async () => {
