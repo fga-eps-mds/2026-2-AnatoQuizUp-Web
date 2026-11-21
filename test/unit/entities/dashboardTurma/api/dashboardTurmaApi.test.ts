@@ -3,6 +3,7 @@ import {
   buscarDesempenhoIndividual,
   buscarDesempenhoPorListas,
   buscarDesempenhoListaIndividual,
+  buscarDetalheEntrega,
 } from '../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi';
 import { httpClient } from '../../../../../src/shared/api/httpClient';
 
@@ -119,5 +120,37 @@ describe('dashboardTurmaApi', () => {
     expect(httpClient.get).toHaveBeenCalledWith('/turmasDashboard/turma-123/listas/lista-456');
     
     expect(resultado).toEqual(mockDesempenhoLista);
+  });
+
+  it('deve buscar o detalhe da entrega do aluno selecionado', async () => {
+    const mockDetalheEntrega = {
+      lista: {
+        id: 'lista-turma-1',
+        nome: 'Lista de Neuroanatomia',
+        publicadaEm: '2026-11-19T12:00:00.000Z',
+      },
+      alunoId: 'aluno-123',
+      resumo: {
+        totalQuestoes: 2,
+        acertos: 1,
+        erros: 0,
+        naoRespondidas: 1,
+        taxaAcerto: 50,
+      },
+      questoes: [],
+    };
+
+    (httpClient.get as jest.Mock).mockResolvedValue({ data: mockDetalheEntrega });
+
+    const resultado = await buscarDetalheEntrega(
+      'turma-123',
+      'lista-turma-1',
+      'aluno-123',
+    );
+
+    expect(httpClient.get).toHaveBeenCalledWith(
+      '/turmasDashboard/turma-123/listas/lista-turma-1/alunos/aluno-123/entrega',
+    );
+    expect(resultado).toEqual(mockDetalheEntrega);
   });
 });
