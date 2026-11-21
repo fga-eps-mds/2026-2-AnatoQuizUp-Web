@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { BarChart3, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { buscarDesempenhoIndividual } from '../../../entities/dashboardTurma/api/dashboardTurmaApi';
 import { buscarUsuariosPorIds } from '../../../entities/usuarios/api/usuarioApi';
 import type { DesempenhoAluno } from '../../../entities/dashboardTurma/model/types';
 import type { UsuarioResumo } from '../../../entities/usuarios/model/types';
+import { EvolucaoTemaAluno } from './EvolucaoTemaAluno';
 
 // Une as estatisticas de desempenho do aluno com seus dados de usuario (ou null se nao resolvido).
 type AlunoComDesempenho = DesempenhoAluno & { usuario: UsuarioResumo | null };
@@ -201,7 +202,12 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
       {/* Modal de detalhe do aluno selecionado: resumo e desempenho por tema. */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-detalhe-aluno"
+            className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
+          >
             <div className="mb-5 flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div
@@ -210,7 +216,9 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
                   {initials(selected.usuario?.nome ?? '?')}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900">{selected.usuario?.nome ?? 'Aluno'}</h3>
+                  <h3 id="titulo-detalhe-aluno" className="font-bold text-gray-900">
+                    {selected.usuario?.nome ?? 'Aluno'}
+                  </h3>
                   <p className="text-sm text-gray-400">{selected.usuario?.email}</p>
                 </div>
               </div>
@@ -240,35 +248,17 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
               </div>
             </div>
 
-            {selected.desempenhoPorTema.length > 0 ? (
-              <>
-                <div className="mb-3 flex items-center gap-2">
-                  <BarChart3 size={16} className="text-gray-400" />
-                  <span className="text-sm font-bold text-gray-700">Desempenho por Tema</span>
-                </div>
-                <div className="max-h-64 space-y-3 overflow-y-auto">
-                  {selected.desempenhoPorTema.map((tema) => (
-                    <div key={tema.nome} className="flex items-center gap-3">
-                      <span className="w-1/3 truncate text-sm font-medium text-gray-700">{tema.nome}</span>
-                      <div className="flex-1">
-                        <div className="h-2 w-full rounded-full bg-gray-100">
-                          <div
-                            className={`h-2 rounded-full ${barColor(tema.taxaAcerto)}`}
-                            style={{ width: `${tema.taxaAcerto}%` }}
-                          />
-                        </div>
-                      </div>
-                      <span className={`w-10 text-right text-sm font-bold ${textColor(tema.taxaAcerto)}`}>
-                        {tema.taxaAcerto}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="text-center text-sm text-gray-400">Nenhuma questão respondida ainda.</p>
-            )}
-          </div>
+            <div className="mb-3 border-b border-gray-200">
+              <span className="inline-block border-b-2 border-teal-600 px-1 pb-2 text-sm font-bold text-teal-700">
+                Evolução por tema
+              </span>
+            </div>
+            <EvolucaoTemaAluno
+              turmaId={turmaId}
+              alunoId={selected.alunoId}
+              nomeAluno={selected.usuario?.nome ?? 'Aluno'}
+            />
+          </section>
         </div>
       )}
     </>
