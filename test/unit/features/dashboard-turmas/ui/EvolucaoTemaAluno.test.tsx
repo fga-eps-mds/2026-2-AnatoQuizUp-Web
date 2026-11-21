@@ -8,8 +8,11 @@ jest.mock('../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi', ()
 }));
 
 jest.mock('../../../../../src/features/dashboard-turmas/ui/ModalDetalheEntrega', () => ({
-  ModalDetalheEntrega: ({ listaId }: { listaId: string }) => (
-    <div>Detalhe da entrega {listaId}</div>
+  ModalDetalheEntrega: ({ listaId, onBack }: { listaId: string; onBack: () => void }) => (
+    <div>
+      <span>Detalhe da entrega {listaId}</span>
+      <button type="button" onClick={onBack}>Voltar à evolução</button>
+    </div>
   ),
 }));
 
@@ -252,5 +255,61 @@ describe('EvolucaoTemaAluno', () => {
     await user.click(await screen.findByRole('button', { name: 'Ver entrega' }));
 
     expect(screen.getByText('Detalhe da entrega lista-1')).toBeInTheDocument();
+  });
+
+  it('preserva tema e periodo ao voltar do detalhe da entrega', async () => {
+    const user = userEvent.setup();
+    mockBuscarEvolucao.mockResolvedValue({
+      alunoId: 'aluno-1',
+      temas: [
+        {
+          temaId: 'tema-1',
+          nome: 'Osteologia',
+          totalResultadosValidos: 1,
+          mensagem: null,
+          resultados: [{
+            listaTurmaId: 'lista-1',
+            nomeLista: 'Lista de ossos',
+            publicadaEm: '2026-03-12T10:00:00.000Z',
+            status: 'SUBMETIDA',
+            acertos: 3,
+            totalQuestoes: 4,
+            taxaAcerto: 75,
+            variacaoPp: null,
+          }],
+        },
+        {
+          temaId: 'tema-2',
+          nome: 'Neuroanatomia',
+          totalResultadosValidos: 1,
+          mensagem: null,
+          resultados: [{
+            listaTurmaId: 'lista-2',
+            nomeLista: 'Lista de neuro',
+            publicadaEm: '2026-04-09T10:00:00.000Z',
+            status: 'SUBMETIDA',
+            acertos: 4,
+            totalQuestoes: 5,
+            taxaAcerto: 80,
+            variacaoPp: null,
+          }],
+        },
+      ],
+    });
+
+    render(
+      <EvolucaoTemaAluno turmaId="turma-1" alunoId="aluno-1" nomeAluno="João Silva" />,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Neuroanatomia' }));
+    const outroSemestre = new Date().getMonth() < 6 ? 2 : 1;
+    await user.click(screen.getByRole('button', { name: `${outroSemestre}º semestre` }));
+    await screen.findByText('Lista de neuro');
+    await user.click(screen.getByRole('button', { name: 'Ver entrega' }));
+    await user.click(screen.getByRole('button', { name: 'Voltar à evolução' }));
+
+    expect(screen.getByText('Lista de neuro')).toBeInTheDocument();
+    expect(screen.queryByText('Lista de ossos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Detalhe da entrega lista-2')).not.toBeInTheDocument();
   });
 });
