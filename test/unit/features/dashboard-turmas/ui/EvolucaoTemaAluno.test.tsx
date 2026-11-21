@@ -178,6 +178,51 @@ describe('EvolucaoTemaAluno', () => {
     ).toBeInTheDocument();
   });
 
+  it('informa quando nao existem resultados no periodo', async () => {
+    mockBuscarEvolucao.mockResolvedValue({
+      alunoId: 'aluno-1',
+      temas: [],
+    });
+
+    render(
+      <EvolucaoTemaAluno turmaId="turma-1" alunoId="aluno-1" nomeAluno="João Silva" />,
+    );
+
+    expect(
+      await screen.findByText('Nenhuma lista com temas foi encontrada no período.'),
+    ).toBeInTheDocument();
+  });
+
+  it('identifica lista pendente sem permitir abrir uma entrega', async () => {
+    mockBuscarEvolucao.mockResolvedValue({
+      alunoId: 'aluno-1',
+      temas: [{
+        temaId: 'tema-1',
+        nome: 'Osteologia',
+        totalResultadosValidos: 0,
+        mensagem: 'Nenhuma entrega concluída para comparação.',
+        resultados: [{
+          listaTurmaId: 'lista-1',
+          nomeLista: 'Lista pendente',
+          publicadaEm: '2026-03-12T10:00:00.000Z',
+          status: 'EM_ANDAMENTO',
+          acertos: null,
+          totalQuestoes: 4,
+          taxaAcerto: null,
+          variacaoPp: null,
+        }],
+      }],
+    });
+
+    render(
+      <EvolucaoTemaAluno turmaId="turma-1" alunoId="aluno-1" nomeAluno="João Silva" />,
+    );
+
+    expect(await screen.findByText('Pendente')).toBeInTheDocument();
+    expect(screen.getByText('Nenhuma entrega concluída para comparação.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver entrega' })).not.toBeInTheDocument();
+  });
+
   it('abre o detalhe da entrega selecionada', async () => {
     const user = userEvent.setup();
     mockBuscarEvolucao.mockResolvedValue({
