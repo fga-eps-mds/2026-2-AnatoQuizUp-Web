@@ -149,6 +149,16 @@ describe('lojaService', () => {
     await expect(comprarItem('item-1')).rejects.toThrow('Erro simulado pelo mock');
   });
 
+  it('deve lançar erro tratado nas demais chamadas de leitura', async () => {
+    (httpClient.get as jest.Mock).mockRejectedValue(new Error('falha de rede'));
+    (httpClient.post as jest.Mock).mockRejectedValue(new Error('falha de rede'));
+
+    await expect(listarCatalogo()).rejects.toThrow('Erro simulado pelo mock');
+    await expect(listarInventario()).rejects.toThrow('Erro simulado pelo mock');
+    await expect(listarHistorico()).rejects.toThrow('Erro simulado pelo mock');
+    await expect(usarItem('cafe-1')).rejects.toThrow('Erro simulado pelo mock');
+  });
+
   it('deve achatar o inventário completo mantendo a quantidade no registro', async () => {
     (httpClient.get as jest.Mock).mockResolvedValue({
       data: {

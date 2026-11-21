@@ -57,4 +57,13 @@ describe('resolucaoListaApi', () => {
     expect(httpClient.post).toHaveBeenCalledWith('/listasAluno/lista-1/submeter');
     expect(resultado).toEqual({ mensagem: 'Submetido' });
   });
+
+  it('baixarPdfAluno - deve fazer GET para /listasAluno/:id/pdf e devolver o base64', async () => {
+    (httpClient.get as jest.Mock).mockResolvedValue({ data: { base64: 'JVBERi0x' } });
+
+    const resultado = await resolucaoListaApi.baixarPdfAluno('lista-1');
+
+    expect(httpClient.get).toHaveBeenCalledWith('/listasAluno/lista-1/pdf');
+    expect(resultado).toBe('JVBERi0x');
+  });
 });
