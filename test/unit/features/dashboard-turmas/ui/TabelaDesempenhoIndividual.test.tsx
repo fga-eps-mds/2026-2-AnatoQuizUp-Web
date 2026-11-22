@@ -13,7 +13,12 @@ jest.mock('../../../../../src/entities/usuarios/api/usuarioApi', () => ({
 }));
 
 jest.mock('../../../../../src/features/dashboard-turmas/ui/EvolucaoTemaAluno', () => ({
-  EvolucaoTemaAluno: () => <div>Evolução por tema carregada</div>,
+  EvolucaoTemaAluno: ({ onVoltar }: { onVoltar: () => void }) => (
+    <div>
+      Evolução por tema carregada
+      <button type="button" onClick={onVoltar}>Voltar</button>
+    </div>
+  ),
 }));
 
 const mockBuscarIndividual = buscarDesempenhoIndividual as jest.Mock;
@@ -88,7 +93,7 @@ describe('TabelaDesempenhoIndividual', () => {
     expect(mockBuscarUsuarios).toHaveBeenCalledWith(['aluno-1']);
   });
 
-  it('deve abrir o modal ao clicar em um aluno', async () => {
+  it('deve abrir primeiro o resumo individual ao clicar em um aluno', async () => {
     const user = userEvent.setup();
     mockBuscarIndividual.mockResolvedValue({ alunos: [alunoStats] });
     mockBuscarUsuarios.mockResolvedValue([alunoUsuario]);
@@ -97,8 +102,9 @@ describe('TabelaDesempenhoIndividual', () => {
 
     await user.click(await screen.findByText('João Silva'));
 
-    expect(screen.getByText('Evolução por tema')).toBeInTheDocument();
-    expect(screen.getByText('Evolução por tema carregada')).toBeInTheDocument();
+    expect(screen.getByText('Desempenho por Tema')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver evolução' })).toBeInTheDocument();
+    expect(screen.queryByText('Evolução por tema carregada')).not.toBeInTheDocument();
   });
 
   it('deve exibir os cards de resumo no modal', async () => {
@@ -123,16 +129,16 @@ describe('TabelaDesempenhoIndividual', () => {
 
     await user.click(await screen.findByText('João Silva'));
 
-    expect(screen.getByText('Evolução por tema')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver evolução' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Fechar detalhes do aluno' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('Evolução por tema')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Ver evolução' })).not.toBeInTheDocument();
     });
   });
 
-  it('deve carregar a evolucao mesmo quando o resumo anterior nao tem temas', async () => {
+  it('deve carregar a evolução somente após a ação do professor', async () => {
     const user = userEvent.setup();
     mockBuscarIndividual.mockResolvedValue({
       alunos: [{ ...alunoStats, desempenhoPorTema: [] }],
@@ -143,7 +149,30 @@ describe('TabelaDesempenhoIndividual', () => {
 
     await user.click(await screen.findByText('João Silva'));
 
+    expect(screen.getByText('Nenhuma questão respondida ainda.')).toBeInTheDocument();
+    expect(screen.queryByText('Evolução por tema carregada')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Ver evolução' }));
+
     expect(screen.getByText('Evolução por tema carregada')).toBeInTheDocument();
+  });
+
+  it('deve permitir voltar da evolução para o resumo individual', async () => {
+    const user = userEvent.setup();
+    mockBuscarIndividual.mockResolvedValue({ alunos: [alunoStats] });
+    mockBuscarUsuarios.mockResolvedValue([alunoUsuario]);
+
+    render(<TabelaDesempenhoIndividual turmaId="turma-123" />);
+
+    await user.click(await screen.findByText('João Silva'));
+    await user.click(screen.getByRole('button', { name: 'Ver evolução' }));
+
+    expect(screen.getByText('Evolução por tema carregada')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Voltar' }));
+
+    expect(screen.queryByText('Evolução por tema carregada')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver evolução' })).toBeInTheDocument();
   });
 
   it('deve formatar a última atividade como "Hoje", "Ontem", data antiga e traço', async () => {
