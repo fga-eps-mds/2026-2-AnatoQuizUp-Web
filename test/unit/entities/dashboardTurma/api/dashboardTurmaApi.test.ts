@@ -4,6 +4,7 @@ import {
   buscarDesempenhoPorListas,
   buscarDesempenhoListaIndividual,
   buscarDetalheEntrega,
+  buscarEvolucaoTemasAluno,
 } from '../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi';
 import { httpClient } from '../../../../../src/shared/api/httpClient';
 
@@ -152,5 +153,34 @@ describe('dashboardTurmaApi', () => {
       '/turmasDashboard/turma-123/listas/lista-turma-1/alunos/aluno-123/entrega',
     );
     expect(resultado).toEqual(mockDetalheEntrega);
+  });
+
+  it('deve buscar a evolucao por tema do aluno dentro do periodo informado', async () => {
+    const mockEvolucao = {
+      alunoId: 'aluno-123',
+      temas: [
+        {
+          temaId: 'tema-1',
+          temaNome: 'Neuroanatomia',
+          totalResultadosValidos: 1,
+          mensagem: 'Uma entrega disponível. São necessárias duas para comparar.',
+          resultados: [],
+        },
+      ],
+    };
+    const periodo = {
+      inicio: '2026-07-01T00:00:00.000Z',
+      fim: '2026-12-31T23:59:59.999Z',
+    };
+
+    (httpClient.get as jest.Mock).mockResolvedValue({ data: mockEvolucao });
+
+    const resultado = await buscarEvolucaoTemasAluno('turma-123', 'aluno-123', periodo);
+
+    expect(httpClient.get).toHaveBeenCalledWith(
+      '/turmasDashboard/turma-123/alunos/aluno-123/evolucao-temas',
+      { params: periodo },
+    );
+    expect(resultado).toEqual(mockEvolucao);
   });
 });

@@ -74,7 +74,7 @@ describe('EvolucaoTemaAluno', () => {
     expect(screen.getByText('2 de 5')).toBeInTheDocument();
     expect(screen.getByText('Pendente')).toBeInTheDocument();
     expect(screen.getByText('4 de 5')).toBeInTheDocument();
-    expect(screen.getByText('+40 pp')).toBeInTheDocument();
+    expect(screen.getByText('Variação entre entregas: +40 pontos percentuais')).toBeInTheDocument();
     expect(screen.getAllByText('Ver entrega')).toHaveLength(2);
     const linhas = screen.getAllByRole('row');
     expect(linhas[1]).toHaveTextContent('Bases de osteologia');
@@ -194,6 +194,88 @@ describe('EvolucaoTemaAluno', () => {
     expect(
       await screen.findByText('Nenhuma lista com temas foi encontrada no período.'),
     ).toBeInTheDocument();
+  });
+
+  it('permite voltar ao semestre anterior quando o período selecionado não tem listas', async () => {
+    const user = userEvent.setup();
+    const temaComResultado = {
+      alunoId: 'aluno-1',
+      temas: [{
+        temaId: 'tema-1',
+        nome: 'Neuroanatomia',
+        totalResultadosValidos: 1,
+        mensagem: null,
+        resultados: [{
+          listaTurmaId: 'lista-1',
+          nomeLista: 'Neuro aplicada',
+          publicadaEm: '2026-03-12T10:00:00.000Z',
+          status: 'SUBMETIDA',
+          acertos: 3,
+          totalQuestoes: 4,
+          taxaAcerto: 75,
+          variacaoPp: null,
+        }],
+      }],
+    };
+    mockBuscarEvolucao
+      .mockResolvedValueOnce(temaComResultado)
+      .mockResolvedValueOnce({ alunoId: 'aluno-1', temas: [] })
+      .mockResolvedValueOnce(temaComResultado);
+
+    render(
+      <EvolucaoTemaAluno turmaId="turma-1" alunoId="aluno-1" nomeAluno="João Silva" />,
+    );
+
+    expect(await screen.findByText('Neuro aplicada')).toBeInTheDocument();
+
+    const semestreAtual = new Date().getMonth() < 6 ? 1 : 2;
+    const outroSemestre = semestreAtual === 1 ? 2 : 1;
+    await user.click(screen.getByRole('button', { name: `${outroSemestre}º semestre` }));
+
+    expect(
+      await screen.findByText('Nenhuma lista com temas foi encontrada no período.'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Voltar' }));
+
+    expect(await screen.findByText('Neuro aplicada')).toBeInTheDocument();
+  });
+
+  it('permite voltar da evolução para o resumo individual', async () => {
+    const user = userEvent.setup();
+    const onVoltar = jest.fn();
+    mockBuscarEvolucao.mockResolvedValue({
+      alunoId: 'aluno-1',
+      temas: [{
+        temaId: 'tema-1',
+        nome: 'Neuroanatomia',
+        totalResultadosValidos: 1,
+        mensagem: null,
+        resultados: [{
+          listaTurmaId: 'lista-1',
+          nomeLista: 'Neuro aplicada',
+          publicadaEm: '2026-03-12T10:00:00.000Z',
+          status: 'SUBMETIDA',
+          acertos: 3,
+          totalQuestoes: 4,
+          taxaAcerto: 75,
+          variacaoPp: null,
+        }],
+      }],
+    });
+
+    render(
+      <EvolucaoTemaAluno
+        turmaId="turma-1"
+        alunoId="aluno-1"
+        nomeAluno="João Silva"
+        onVoltar={onVoltar}
+      />,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Voltar' }));
+
+    expect(onVoltar).toHaveBeenCalledTimes(1);
   });
 
   it('identifica lista pendente sem permitir abrir uma entrega', async () => {
