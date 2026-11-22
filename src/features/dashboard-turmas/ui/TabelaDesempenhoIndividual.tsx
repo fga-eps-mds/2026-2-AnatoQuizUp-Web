@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { BarChart3, X } from 'lucide-react';
 import { buscarDesempenhoIndividual } from '../../../entities/dashboardTurma/api/dashboardTurmaApi';
 import { buscarUsuariosPorIds } from '../../../entities/usuarios/api/usuarioApi';
 import type { DesempenhoAluno } from '../../../entities/dashboardTurma/model/types';
@@ -85,6 +85,7 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
   const [alunos, setAlunos] = useState<AlunoComDesempenho[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selected, setSelected] = useState<AlunoComDesempenho | null>(null);
+  const [visualizacaoModal, setVisualizacaoModal] = useState<'resumo' | 'evolucao'>('resumo');
 
   // Busca o desempenho individual e cruza com os dados de usuario por id.
   useEffect(() => {
@@ -161,7 +162,10 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
               return (
                 <tr
                   key={aluno.alunoId}
-                  onClick={() => setSelected(aluno)}
+                  onClick={() => {
+                    setSelected(aluno);
+                    setVisualizacaoModal('resumo');
+                  }}
                   className="cursor-pointer transition-colors hover:bg-gray-50"
                 >
                   <td className="py-4 pr-4">
@@ -186,9 +190,7 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
                           style={{ width: `${aluno.taxaAcerto}%` }}
                         />
                       </div>
-                      <span className={`text-sm font-bold ${textColor(aluno.taxaAcerto)}`}>
-                        {aluno.taxaAcerto}%
-                      </span>
+                      <span className={`text-sm font-bold ${textColor(aluno.taxaAcerto)}`}>{aluno.taxaAcerto}%</span>
                     </div>
                   </td>
                   <td className="py-4 text-gray-500">{formatarData(aluno.ultimaAtividade)}</td>
@@ -206,58 +208,105 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="titulo-detalhe-aluno"
-            className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
+            className="w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-xl"
           >
-            <div className="mb-5 flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${avatarColor(selected.alunoId)}`}
+            <div className="max-h-[90vh] overflow-y-auto p-6">
+              <div className="mb-5 flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${avatarColor(selected.alunoId)}`}
+                  >
+                    {initials(selected.usuario?.nome ?? '?')}
+                  </div>
+                  <div>
+                    <h3 id="titulo-detalhe-aluno" className="font-bold text-gray-900">
+                      {selected.usuario?.nome ?? 'Aluno'}
+                    </h3>
+                    <p className="text-sm text-gray-400">{selected.usuario?.email}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Fechar detalhes do aluno"
+                  onClick={() => {
+                    setSelected(null);
+                    setVisualizacaoModal('resumo');
+                  }}
+                  className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
                 >
-                  {initials(selected.usuario?.nome ?? '?')}
-                </div>
-                <div>
-                  <h3 id="titulo-detalhe-aluno" className="font-bold text-gray-900">
-                    {selected.usuario?.nome ?? 'Aluno'}
-                  </h3>
-                  <p className="text-sm text-gray-400">{selected.usuario?.email}</p>
-                </div>
+                  <X size={18} />
+                </button>
               </div>
-              <button
-                type="button"
-                aria-label="Fechar detalhes do aluno"
-                onClick={() => setSelected(null)}
-                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            {/* Cards de resumo: questoes, acertos e taxa geral. */}
-            <div className="mb-5 grid grid-cols-3 gap-3">
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className="text-lg font-bold text-gray-900">{selected.totalRespondidas}</p>
-                <p className="text-xs text-gray-500">Questões</p>
+              {/* Cards de resumo: questoes, acertos e taxa geral. */}
+              <div className="mb-5 grid grid-cols-3 gap-3">
+                <div className="rounded-lg bg-gray-50 p-3 text-center">
+                  <p className="text-lg font-bold text-gray-900">{selected.totalRespondidas}</p>
+                  <p className="text-xs text-gray-500">Questões</p>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-3 text-center">
+                  <p className="text-lg font-bold text-green-600">{selected.totalAcertos}</p>
+                  <p className="text-xs text-gray-500">Acertos</p>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-3 text-center">
+                  <p className={`text-lg font-bold ${textColor(selected.taxaAcerto)}`}>{selected.taxaAcerto}%</p>
+                  <p className="text-xs text-gray-500">Taxa Geral</p>
+                </div>
               </div>
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className="text-lg font-bold text-green-600">{selected.totalAcertos}</p>
-                <p className="text-xs text-gray-500">Acertos</p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className={`text-lg font-bold ${textColor(selected.taxaAcerto)}`}>{selected.taxaAcerto}%</p>
-                <p className="text-xs text-gray-500">Taxa Geral</p>
-              </div>
-            </div>
 
-            <div className="mb-3 border-b border-gray-200">
-              <span className="inline-block border-b-2 border-teal-600 px-1 pb-2 text-sm font-bold text-teal-700">
-                Evolução por tema
-              </span>
+              {selected.desempenhoPorTema.length > 0 ? (
+                <>
+                  <div className="mb-3 flex items-center gap-2">
+                    <BarChart3 size={16} className="text-gray-400" />
+                    <span className="text-sm font-bold text-gray-700">Desempenho por Tema</span>
+                  </div>
+                  <div className="space-y-3">
+                    {selected.desempenhoPorTema.map((tema) => (
+                      <div key={tema.nome} className="flex items-center gap-3">
+                        <span className="w-1/3 truncate text-sm font-medium text-gray-700">{tema.nome}</span>
+                        <div className="flex-1">
+                          <div className="h-2 w-full rounded-full bg-gray-100">
+                            <div
+                              className={`h-2 rounded-full ${barColor(tema.taxaAcerto)}`}
+                              style={{ width: `${tema.taxaAcerto}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className={`w-10 text-right text-sm font-bold ${textColor(tema.taxaAcerto)}`}>
+                          {tema.taxaAcerto}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-sm text-gray-400">Nenhuma questão respondida ainda.</p>
+              )}
+
+              {visualizacaoModal === 'resumo' ? (
+                <div className="mt-6 border-t border-gray-100 pt-4 text-right">
+                  <button
+                    type="button"
+                    onClick={() => setVisualizacaoModal('evolucao')}
+                    className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-teal-700 shadow-sm hover:bg-teal-50"
+                  >
+                    Ver evolução
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-5 border-t border-gray-200 pt-4">
+                  <span className="mb-4 inline-block rounded-lg border border-teal-100 bg-teal-50 px-3 py-2 text-sm font-bold text-teal-700">
+                    Evolução por tema
+                  </span>
+                  <EvolucaoTemaAluno
+                    turmaId={turmaId}
+                    alunoId={selected.alunoId}
+                    nomeAluno={selected.usuario?.nome ?? 'Aluno'}
+                    onVoltar={() => setVisualizacaoModal('resumo')}
+                  />
+                </div>
+              )}
             </div>
-            <EvolucaoTemaAluno
-              turmaId={turmaId}
-              alunoId={selected.alunoId}
-              nomeAluno={selected.usuario?.nome ?? 'Aluno'}
-            />
           </section>
         </div>
       )}
