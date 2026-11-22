@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import { buscarEvolucaoTemasAluno } from '../../../entities/dashboardTurma/api/dashboardTurmaApi';
 import type { EvolucaoTema } from '../../../entities/dashboardTurma/model/types';
 import { ModalDetalheEntrega } from './ModalDetalheEntrega';
@@ -9,6 +9,7 @@ type Props = {
   alunoId: string;
   nomeAluno: string;
   periodo?: { inicio: string; fim: string };
+  onVoltar?: () => void;
 };
 
 type Semestre = 1 | 2;
@@ -27,17 +28,21 @@ const periodoDoSemestre = (ano: number, semestre: Semestre) => {
 };
 
 const formatarData = (data: string) =>
-  new Date(data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  new Date(data)
+    .toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    .replace(' de ', ' ')
+    .replace('.', '');
 
 const formatarVariacao = (variacao: number | null) => {
   if (variacao === null) return '—';
-  return `${variacao > 0 ? '+' : ''}${variacao} pp`;
+  return `${variacao > 0 ? '+' : ''}${variacao} pontos percentuais`;
 };
 
-export const EvolucaoTemaAluno = ({ turmaId, alunoId, nomeAluno, periodo }: Props) => {
+export const EvolucaoTemaAluno = ({ turmaId, alunoId, nomeAluno, periodo, onVoltar }: Props) => {
   const agora = new Date();
   const anoAtual = agora.getFullYear();
   const [semestre, setSemestre] = useState<Semestre>(agora.getMonth() < 6 ? 1 : 2);
+  const [semestreAnterior, setSemestreAnterior] = useState<Semestre | null>(null);
   const [temas, setTemas] = useState<EvolucaoTema[]>([]);
   const [temaSelecionadoId, setTemaSelecionadoId] = useState<string | null>(null);
   const [listaSelecionadaId, setListaSelecionadaId] = useState<string | null>(null);
@@ -49,6 +54,12 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, nomeAluno, periodo }: Prop
   );
   const periodoInicio = periodoConsulta.inicio;
   const periodoFim = periodoConsulta.fim;
+
+  const selecionarSemestre = (novoSemestre: Semestre) => {
+    if (novoSemestre === semestre) return;
+    setSemestreAnterior(semestre);
+    setSemestre(novoSemestre);
+  };
 
   useEffect(() => {
     let ativo = true;
@@ -86,6 +97,12 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, nomeAluno, periodo }: Prop
     () => temas.find((tema) => tema.temaId === temaSelecionadoId) ?? null,
     [temas, temaSelecionadoId],
   );
+  const variacaoMaisRecente = useMemo(
+    () => [...(temaSelecionado?.resultados ?? [])]
+      .reverse()
+      .find((resultado) => resultado.variacaoPp !== null)?.variacaoPp ?? null,
+    [temaSelecionado],
+  );
 
   if (carregando) {
     return (
@@ -107,40 +124,31 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, nomeAluno, periodo }: Prop
 
   if (temas.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-gray-500">
-        Nenhuma lista com temas foi encontrada no período.
-      </p>
+      <div className="py-8 text-center">
+        <p className="text-sm text-gray-500">Nenhuma lista com temas foi encontrada no período.</p>
+        {(semestreAnterior || onVoltar) && (
+          <button
+            type="button"
+            onClick={() => {
+              if (!periodo && semestreAnterior) {
+                selecionarSemestre(semestreAnterior);
+                return;
+              }
+              onVoltar?.();
+            }}
+            className="mt-5 inline-flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
+          >
+            <ArrowLeft size={16} />
+            Voltar
+          </button>
+        )}
+      </div>
     );
   }
 
   return (
     <>
-      {!periodo && (
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-gray-700">Período de {anoAtual}</p>
-          <div className="flex rounded-lg bg-gray-100 p-1">
-            {([1, 2] as const).map((opcao) => (
-              <button
-                key={opcao}
-                type="button"
-                onClick={() => setSemestre(opcao)}
-                className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
-                  semestre === opcao
-                    ? 'bg-white text-teal-700 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {opcao}º semestre
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mb-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          Selecione um tema
-        </p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4">
         <div className="flex flex-wrap gap-2">
           {temas.map((tema) => {
             const selecionado = tema.temaId === temaSelecionadoId;
@@ -149,10 +157,10 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, nomeAluno, periodo }: Prop
                 key={tema.temaId}
                 type="button"
                 onClick={() => setTemaSelecionadoId(tema.temaId)}
-                className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
+                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                   selecionado
-                    ? 'border-teal-600 bg-teal-600 text-white'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-teal-300'
+                    ? 'border-teal-100 bg-teal-50 text-teal-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 {tema.nome}
@@ -160,28 +168,46 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, nomeAluno, periodo }: Prop
             );
           })}
         </div>
+
+        {!periodo && (
+          <div className="flex gap-2" aria-label={`Período de ${anoAtual}`}>
+            {([1, 2] as const).map((opcao) => (
+              <button
+                key={opcao}
+                type="button"
+                onClick={() => selecionarSemestre(opcao)}
+                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                  semestre === opcao
+                    ? 'border-teal-100 bg-teal-50 text-teal-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {opcao}º semestre
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {temaSelecionado && (
         <>
-          <div className="overflow-x-auto rounded-xl border border-gray-200">
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+              <thead className="text-left text-[10px] uppercase tracking-wide text-gray-500">
                 <tr>
-                  <th className="px-4 py-3">Publicação</th>
-                  <th className="px-4 py-3">Lista</th>
-                  <th className="px-4 py-3">Resultado</th>
-                  <th className="px-4 py-3">Acerto</th>
-                  <th className="px-4 py-3">Variação</th>
-                  <th className="px-4 py-3"><span className="sr-only">Ações</span></th>
+                  <th className="pb-3 pr-4">Publicação</th>
+                  <th className="px-4 pb-3">Lista</th>
+                  <th className="px-4 pb-3">Resultado</th>
+                  <th className="px-4 pb-3">Acerto</th>
+                  <th className="pb-3 pl-4"><span className="sr-only">Ações</span></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {temaSelecionado.resultados.map((resultado) => {
                   const entregue = resultado.status === 'SUBMETIDA';
                   return (
                     <tr key={resultado.listaTurmaId}>
-                      <td className="whitespace-nowrap px-4 py-3 text-gray-500">
+                      <td className="whitespace-nowrap py-3 pr-4 text-gray-600">
                         {formatarData(resultado.publicadaEm)}
                       </td>
                       <td className="px-4 py-3 font-medium text-gray-900">{resultado.nomeLista}</td>
@@ -191,15 +217,12 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, nomeAluno, periodo }: Prop
                       <td className="whitespace-nowrap px-4 py-3 font-semibold text-gray-900">
                         {entregue ? `${resultado.taxaAcerto}%` : '—'}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-gray-700">
-                        {formatarVariacao(resultado.variacaoPp)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-right">
+                      <td className="whitespace-nowrap py-3 pl-4 text-right">
                         {entregue && (
                           <button
                             type="button"
                             onClick={() => setListaSelecionadaId(resultado.listaTurmaId)}
-                            className="font-semibold text-teal-700 hover:text-teal-900"
+                            className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-800 shadow-sm hover:bg-gray-50"
                           >
                             Ver entrega
                           </button>
@@ -212,10 +235,25 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, nomeAluno, periodo }: Prop
             </table>
           </div>
 
-          {temaSelecionado.mensagem && (
-            <p className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              {temaSelecionado.mensagem}
+          {variacaoMaisRecente !== null ? (
+            <p className="mt-4 text-sm font-bold text-green-600">
+              Variação entre entregas: {formatarVariacao(variacaoMaisRecente)}
             </p>
+          ) : temaSelecionado.mensagem ? (
+            <p className="mt-4 text-sm font-medium text-amber-700">{temaSelecionado.mensagem}</p>
+          ) : null}
+
+          {onVoltar && (
+            <div className="mt-5 border-t border-gray-100 pt-4">
+              <button
+                type="button"
+                onClick={onVoltar}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50"
+              >
+                <ArrowLeft size={16} />
+                Voltar
+              </button>
+            </div>
           )}
         </>
       )}
