@@ -62,21 +62,21 @@ describe('ModalDetalheEntrega', () => {
         turmaId="turma-1"
         listaId="lista-turma-1"
         alunoId="aluno-1"
-        nomeAluno="Ana Silva"
+        rotuloVoltar="Voltar à evolução"
         onBack={onBack}
       />,
     );
 
     expect(await screen.findByRole('heading', { name: 'Lista de Neuroanatomia' })).toBeInTheDocument();
     expect(screen.getByText('Publicada em 19/11/2026')).toBeInTheDocument();
-    expect(screen.getByText('33%')).toBeInTheDocument();
+    expect(screen.getByText('1 acerto · 1 erro · 1 sem resposta · 33% de acerto')).toBeInTheDocument();
     expect(screen.getByText('Acertou')).toBeInTheDocument();
     expect(screen.getByText('Errou')).toBeInTheDocument();
     expect(screen.getAllByText('Não respondida')).toHaveLength(2);
     expect(screen.getByText('C. Alternativa correta')).toBeInTheDocument();
     expect(screen.getAllByText('Gabarito:')).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Voltar à visualização anterior' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Voltar à evolução' }));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
@@ -88,7 +88,7 @@ describe('ModalDetalheEntrega', () => {
         turmaId="turma-1"
         listaId="lista-turma-1"
         alunoId="aluno-1"
-        nomeAluno="Ana Silva"
+        rotuloVoltar="Voltar ao histórico"
         onBack={jest.fn()}
       />,
     );
