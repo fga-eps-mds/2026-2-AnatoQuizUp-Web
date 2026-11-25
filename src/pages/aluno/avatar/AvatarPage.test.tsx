@@ -111,7 +111,7 @@ describe('AvatarPage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Editar aparência do avatar' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Editar aparência do avatar' }));
     expect(screen.getByRole('button', { name: 'Azul' })).toHaveClass('selecionado');
-    expect(screen.getByRole('button', { name: 'Moicano' })).toHaveClass('selecionado');
+    expect(screen.getByRole('button', { name: 'Topete' })).toHaveClass('selecionado');
     fireEvent.click(screen.getByRole('tab', { name: 'Acessórios' }));
     expect(screen.getByRole('button', { name: 'Luva de lã' })).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(screen.getByRole('tab', { name: 'Calçados' }));

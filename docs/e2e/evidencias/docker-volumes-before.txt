@@ -1,0 +1,6 @@
+local     2026-1-anatoquizup-quiz-service_quiz_minio_data
+local     2026-1-anatoquizup-quiz-service_quiz_postgres_data
+local     2026-1-anatoquizup-usuario-service_postgres_data
+local     2026-2-anatoquizup-quiz-service_quiz_minio_data
+local     2026-2-anatoquizup-quiz-service_quiz_postgres_data
+local     2026-2-anatoquizup-usuario-service_postgres_data

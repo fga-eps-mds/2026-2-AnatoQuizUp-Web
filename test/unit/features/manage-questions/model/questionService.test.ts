@@ -360,4 +360,131 @@ describe('questionService', () => {
       await expect(deleteQuestion('1')).rejects.toThrow('Não foi possível processar a questão.');
     });
   });
+
+  describe('Cobertura adicional de branches', () => {
+    it('busca questao por id usando o mock quando USE_MOCKS esta ativo', async () => {
+      const { buscarQuestaoPorId } = await loadService(true);
+
+      await expect(buscarQuestaoPorId('id-fake')).rejects.toThrow('Questão não encontrada.');
+      expect(getMock).not.toHaveBeenCalled();
+    });
+
+    it('mapeia a dificuldade Fácil para a API e Difícil/hard vinda da API', async () => {
+      const { createQuestion, listProfessorQuestions } = await loadService(false);
+      postMock.mockResolvedValueOnce({ data: { dados: apiQuestion } });
+
+      await createQuestion({ ...formValues, difficulty: 'Fácil' });
+      const formData = postMock.mock.calls[0][1] as FormData;
+      expect(formData.get('dificuldade')).toBe('FACIL');
+
+      getMock.mockResolvedValueOnce({
+        data: { dados: [{ id: 'q-hard', dificuldade: 'hard', alternativas: null }] },
+      });
+      const [questao] = await listProfessorQuestions();
+      expect(questao.difficulty).toBe('Difícil');
+    });
+
+    it('usa o campo topic diretamente quando informado pelo backend', async () => {
+      const { listProfessorQuestions } = await loadService(false);
+      getMock.mockResolvedValueOnce({
+        data: { dados: [{ id: 'q-topic', topic: 'Tema vindo de topic', alternativas: null }] },
+      });
+
+      const [questao] = await listProfessorQuestions();
+      expect(questao.topic).toBe('Tema vindo de topic');
+    });
+
+    it('normaliza alternativas indexadas por letra cujo valor e um objeto', async () => {
+      const { listProfessorQuestions } = await loadService(false);
+      getMock.mockResolvedValueOnce({
+        data: {
+          dados: [
+            {
+              id: 'q-obj-alt',
+              alternativaCorreta: 'A',
+              alternativas: {
+                A: { texto: 'Alternativa objeto, sem id', correta: true },
+              },
+            },
+          ],
+        },
+      });
+
+      const [questao] = await listProfessorQuestions();
+      expect(questao.alternatives[0]).toMatchObject({
+        label: 'A',
+        text: 'Alternativa objeto, sem id',
+        isCorrect: true,
+      });
+    });
+
+    it('usa fallback vazio quando a alternativa nao tem id nem texto conhecido', async () => {
+      const { listProfessorQuestions } = await loadService(false);
+      getMock.mockResolvedValueOnce({
+        data: { dados: [{ id: 'q-alt-vazia', alternativas: [{}] }] },
+      });
+
+      const [questao] = await listProfessorQuestions();
+      expect(questao.alternatives[0]).toMatchObject({ id: '0', text: '' });
+    });
+
+    it('marca a alternativa F como gabarito e envia a letra E (convencao da API)', async () => {
+      const { createQuestion } = await loadService(false);
+      postMock.mockResolvedValueOnce({ data: { dados: apiQuestion } });
+
+      await createQuestion({
+        ...formValues,
+        type: 'Verdadeiro/Falso',
+        alternatives: [
+          { id: 'v', label: 'V', text: 'Opção V', isCorrect: false },
+          { id: 'f', label: 'F', text: 'Opção F', isCorrect: true },
+        ],
+      });
+
+      const formData = postMock.mock.calls[0][1] as FormData;
+      expect(formData.get('alternativaCorreta')).toBe('E');
+    });
+
+    it('usa string vazia no FormData quando os campos opcionais nao sao informados', async () => {
+      const { createQuestion } = await loadService(false);
+      postMock.mockResolvedValueOnce({ data: { dados: apiQuestion } });
+
+      await createQuestion({
+        ...formValues,
+        origemQuestao: '' as never,
+        taxonomiaBloom: '' as never,
+        regiaoAnatomica: undefined as never,
+        tags: undefined as never,
+      });
+
+      const formData = postMock.mock.calls[0][1] as FormData;
+      expect(formData.get('origemQuestao')).toBe('');
+      expect(formData.get('taxonomiaBloom')).toBe('');
+      expect(formData.get('regiaoAnatomica')).toBe('');
+      expect(formData.get('palavrasChave')).toBe('');
+    });
+
+    it('busca o alias "busca" e "termo" como texto de pesquisa', async () => {
+      const { listProfessorQuestions } = await loadService(false);
+      getMock.mockResolvedValueOnce({ data: { dados: [] } });
+      await listProfessorQuestions({ busca: 'pulmão' });
+      expect(getMock).toHaveBeenCalledWith('/questoes/busca', { params: { tema: 'pulmão' } });
+
+      getMock.mockResolvedValueOnce({ data: { dados: [] } });
+      await listProfessorQuestions({ termo: 'coração' });
+      expect(getMock).toHaveBeenCalledWith('/questoes/busca', { params: { tema: 'coração' } });
+    });
+
+    it('usa o id gerado como fallback quando a API nao devolve "dados" no create/update', async () => {
+      const { createQuestion, updateQuestion } = await loadService(false);
+      postMock.mockResolvedValueOnce({ data: {} });
+      putMock.mockResolvedValueOnce({ data: {} });
+
+      const criada = await createQuestion(formValues);
+      expect(criada.id).toEqual(expect.any(String));
+
+      const atualizada = await updateQuestion('questao-existente', formValues);
+      expect(atualizada.id).toBe('questao-existente');
+    });
+  });
 });

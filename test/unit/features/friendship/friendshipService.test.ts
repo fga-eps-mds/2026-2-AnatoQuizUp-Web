@@ -180,6 +180,22 @@ describe('friendshipService', () => {
     await expect(buscarColegas()).rejects.toThrow('Erro simulado pelo mock');
   });
 
+  it('deve normalizar erro usando extractErrorMessage em todas as demais chamadas', async () => {
+    (httpClient.get as jest.Mock).mockRejectedValue(new Error('Falha'));
+    (httpClient.post as jest.Mock).mockRejectedValue(new Error('Falha'));
+    (httpClient.patch as jest.Mock).mockRejectedValue(new Error('Falha'));
+    (httpClient.delete as jest.Mock).mockRejectedValue(new Error('Falha'));
+
+    await expect(enviarSolicitacao('usuario-2')).rejects.toThrow('Erro simulado pelo mock');
+    await expect(listarConvitesRecebidos()).rejects.toThrow('Erro simulado pelo mock');
+    await expect(listarConvitesEnviados()).rejects.toThrow('Erro simulado pelo mock');
+    await expect(aceitarConvite('amizade-1')).rejects.toThrow('Erro simulado pelo mock');
+    await expect(recusarConvite('amizade-1')).rejects.toThrow('Erro simulado pelo mock');
+    await expect(listarAmigos()).rejects.toThrow('Erro simulado pelo mock');
+    await expect(desfazerAmizade('amizade-1')).rejects.toThrow('Erro simulado pelo mock');
+    await expect(alterarVisibilidade(true)).rejects.toThrow('Erro simulado pelo mock');
+  });
+
   it('deve buscar perfil de amigo e desembrulhar o envelope da API', async () => {
     const perfil = {
       id: 'usuario-2',

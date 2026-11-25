@@ -62,6 +62,27 @@ it('mantém aparência após remontagem e isola usuários com o mesmo nome', () 
   expect(avatar()).toHaveStyle({ filter: 'hue-rotate(0deg)' });
 });
 
+it('normaliza a aparência antes de gravar no armazenamento local', () => {
+  act(() => {
+    salvarAparencia('aluna-1', {
+      ...APARENCIA_PADRAO,
+      corCerebro: 'roxo',
+      cabelo: '<img src=x onerror=alert(1)>',
+      acessorio: 'coroa',
+      luva: 'luva-boxe',
+      calcado: 'tenis-esportivo',
+    } as unknown as typeof APARENCIA_PADRAO);
+  });
+
+  expect(carregarAparencia('aluna-1')).toEqual({
+    ...APARENCIA_PADRAO,
+    corCerebro: 'roxo',
+    acessorio: 'coroa',
+    luva: 'luva-boxe',
+    calcado: 'tenis-esportivo',
+  });
+});
+
 it.each(['null', '42', '"texto"', '{', '{"corCerebro":"invalida","cabelo":"x","acessorio":"y"}'])('tolera registro inválido %s', (registro) => {
   localStorage.setItem('anatoquizup:avatar:aluna-1', registro);
   expect(carregarAparencia('aluna-1')).toEqual(APARENCIA_PADRAO);

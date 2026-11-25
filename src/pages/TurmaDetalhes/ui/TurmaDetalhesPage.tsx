@@ -340,17 +340,11 @@ export const TurmaDetalhesPage = () => {
         <>
           <CardsResumo dados={dashboardData} />
 
-          {dashboardData.totalQuestoesRespondidas === 0 ? (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-              <div className="lg:col-span-8">
-                <EmptyState />
-              </div>
-              {renderCardDesempenhoListas()}
-            </div>
-          ) : (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
               <div className="flex flex-col gap-6 lg:col-span-8">
-                <GraficoTemas temas={dashboardData.desempenhoPorTema} />
+                {dashboardData.totalQuestoesRespondidas === 0
+                  ? <EmptyState />
+                  : <GraficoTemas temas={dashboardData.desempenhoPorTema} />}
                 
                 <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
                   <h3 className="mb-4 flex items-center gap-2 font-bold text-gray-900">
@@ -362,7 +356,6 @@ export const TurmaDetalhesPage = () => {
               </div>
               {renderCardDesempenhoListas()}
             </div>
-          )}
         </>
       )}
 

@@ -1,0 +1,7 @@
+db-user
+minio
+db-quiz
+backend-quiz
+backend-user
+bff
+web

@@ -90,3 +90,48 @@ export type DetalheEntrega = {
   };
   questoes: DetalheQuestaoEntrega[];
 };
+
+// Questao ranqueada entre as que tiveram mais erros em uma lista.
+export type QuestaoTopErro = {
+  questaoId: string;
+  numeroQuestao: number;
+  enunciado: string;
+  tema: string;
+  totalErros: number;
+  totalRespostas: number;
+  percentualErro: number;
+};
+
+// Ranking das questoes com mais erros em uma lista especifica.
+export type TopErrosLista = {
+  listaTurmaId: string;
+  nomeLista: string;
+  totalAlunosResponderam: number;
+  questoes: QuestaoTopErro[];
+};
+
+export type StatusResultadoTema = 'SUBMETIDA' | 'EM_ANDAMENTO' | 'NAO_RESPONDEU';
+
+export type ResultadoTemaLista = {
+  listaTurmaId: string;
+  nomeLista: string;
+  publicadaEm: string;
+  status: StatusResultadoTema;
+  acertos: number | null;
+  totalQuestoes: number;
+  taxaAcerto: number | null;
+  variacaoPp: number | null;
+};
+
+export type EvolucaoTema = {
+  temaId: string;
+  nome: string;
+  totalResultadosValidos: number;
+  mensagem: string | null;
+  resultados: ResultadoTemaLista[];
+};
+
+export type EvolucaoTemasAluno = {
+  alunoId: string;
+  temas: EvolucaoTema[];
+};

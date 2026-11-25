@@ -1,6 +1,7 @@
 import { httpClient } from '../../../../../src/shared/api/httpClient';
 import {
   atualizarTurma,
+  buscarTurmaPorId,
   criarTurma,
   desvincularAlunoTurma,
   excluirTurma,
@@ -159,5 +160,28 @@ describe('turmaApi', () => {
     await desvincularAlunoTurma('turma-1', 'aluno-1');
 
     expect(httpClient.delete).toHaveBeenCalledWith('/turmas/turma-1/alunos/aluno-1');
+  });
+
+  it('deve buscar uma turma por id', async () => {
+    (httpClient.get as jest.Mock).mockResolvedValue({
+      data: { mensagem: 'OK', dados: turmaApi },
+    });
+
+    const resultado = await buscarTurmaPorId('turma-1');
+
+    expect(httpClient.get).toHaveBeenCalledWith('/turmas/turma-1');
+    expect(resultado.quantidadeAlunos).toBe(20);
+  });
+
+  it('deve normalizar a contagem de alunos para 0 quando a API nao devolve nem quantidadeAlunos nem _count', async () => {
+    const turmaSemContagem: Record<string, unknown> = { ...turmaApi };
+    delete turmaSemContagem._count;
+    (httpClient.get as jest.Mock).mockResolvedValue({
+      data: { mensagem: 'OK', dados: turmaSemContagem },
+    });
+
+    const resultado = await buscarTurmaPorId('turma-1');
+
+    expect(resultado.quantidadeAlunos).toBe(0);
   });
 });

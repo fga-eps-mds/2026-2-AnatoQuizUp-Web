@@ -144,6 +144,16 @@ describe('TurmaDetalhesPage', () => {
     expect(screen.getByText('50')).toBeInTheDocument(); 
   });
 
+  it('mantém o desempenho individual disponível mesmo sem respostas de quiz', async () => {
+    jest.mocked(buscarTurmaPorId).mockResolvedValue(mockTurma as Awaited<ReturnType<typeof buscarTurmaPorId>>);
+    jest.mocked(buscarDashboardMacro).mockResolvedValue({ ...mockDashboard, totalQuestoesRespondidas: 0 });
+
+    renderWithRouter();
+
+    expect(await screen.findByRole('heading', { name: 'Desempenho Individual' })).toBeInTheDocument();
+    expect(buscarDesempenhoIndividual).toHaveBeenCalledWith('turma-123');
+  });
+
   it('deve exibir o card de desempenho por lista no dashboard', async () => {
     (buscarTurmaPorId as jest.Mock).mockResolvedValue(mockTurma);
     (buscarDashboardMacro as jest.Mock).mockResolvedValue(mockDashboard);

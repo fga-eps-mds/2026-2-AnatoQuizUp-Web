@@ -1,14 +1,35 @@
-// Cliente de API do dashboard de desempenho de turmas. Expoe as quatro visoes
+// Cliente de API do dashboard de desempenho de turmas. Expoe as cinco visoes
 // usadas pelo professor: indicadores macro da turma, desempenho individual dos
-// alunos, desempenho por lista e o detalhe de uma lista especifica.
+// alunos, desempenho por lista, o detalhe de uma lista especifica e o top erros.
 import type {
   DesempenhoListaIndividual,
   DashboardIndividual,
   DashboardMacro,
   DesempenhoLista,
   DetalheEntrega,
+  TopErrosLista,
+  EvolucaoTemasAluno,
 } from '../model/types';
 import { httpClient } from '../../../shared/api/httpClient';
+
+export type ItemHistoricoAluno = {
+  listaTurmaId: string;
+  nomeLista: string;
+  publicadaEm: string;
+  status: 'ENTREGUE' | 'PENDENTE';
+};
+
+export const buscarHistoricoAluno = async (
+  turmaId: string,
+  alunoId: string,
+  params: { inicio: string; fim: string },
+): Promise<ItemHistoricoAluno[]> => {
+  const { data } = await httpClient.get<{ listas: ItemHistoricoAluno[] }>(
+    `/turmasDashboard/${turmaId}/alunos/${encodeURIComponent(alunoId)}/historico-listas`,
+    { params },
+  );
+  return data.listas;
+};
 
 // GET /turmasDashboard/:turmaId/macro — indicadores agregados da turma.
 export const buscarDashboardMacro = async (turmaId: string): Promise<DashboardMacro> => {
@@ -49,3 +70,23 @@ export const buscarDetalheEntrega = async (
   return data;
 };
 
+// GET /turmasDashboard/:turmaId/listas/:listaId/top-erros — ranking de questoes com mais erros.
+export const buscarTopErrosLista = async (
+  turmaId: string,
+  listaId: string
+): Promise<TopErrosLista> => {
+  const { data } = await httpClient.get(`/turmasDashboard/${turmaId}/listas/${listaId}/top-erros`);
+  return data;
+};
+
+export const buscarEvolucaoTemasAluno = async (
+  turmaId: string,
+  alunoId: string,
+  periodo?: { inicio: string; fim: string },
+): Promise<EvolucaoTemasAluno> => {
+  const { data } = await httpClient.get(
+    `/turmasDashboard/${turmaId}/alunos/${alunoId}/evolucao-temas`,
+    { params: periodo },
+  );
+  return data;
+};

@@ -1,0 +1,30 @@
+Listing tests:
+  [chromium] › aluno/amizades.spec.ts:5:5 › Fluxos de amizade do aluno › Solicitar amizade
+  [chromium] › aluno/amizades.spec.ts:17:5 › Fluxos de amizade do aluno › Aceitar convite
+  [chromium] › aluno/amizades.spec.ts:26:5 › Fluxos de amizade do aluno › Desfazer amizade
+  [chromium] › aluno/amizades.spec.ts:41:5 › Fluxos de amizade do aluno › Toggle de visibilidade
+  [chromium] › aluno/listas.spec.ts:5:5 › Fluxos de resposta de lista de questões › Responde lista
+  [chromium] › aluno/quiz.spec.ts:5:5 › Fluxos de resposta de quiz › Responde quiz corretamente
+  [chromium] › aluno/quiz.spec.ts:41:5 › Fluxos de resposta de quiz › Responde quiz erroneamente
+  [chromium] › auth/autenticacao.spec.ts:5:3 › Fluxo de Autenticação › Deve realizar login com sucesso e redirecionar para a Dashboard
+  [chromium] › auth/autenticacao.spec.ts:24:3 › Fluxo de Autenticação › Deve exibir mensagem de erro com credenciais inválidas
+  [chromium] › auth/cadastro.spec.ts:5:3 › Fluxo de Cadastro de Aluno › Deve cadastrar um novo aluno com sucesso e conseguir fazer login
+  [chromium] › auth/cadastro.spec.ts:46:5 › Fluxo de Cadastro de Aluno › Deve cadastrar um novo professor com sucesso e conseguir fazer login
+  [chromium] › missoes-integracao.spec.ts:8:1 › missões são exibidas e avançam após uma resposta real de quiz
+  [chromium] › missoes.spec.ts:3:1 › aluno consulta missões, vê progresso e pode tentar novamente
+  [chromium] › professor/listas.spec.ts:5:3 › Fluxos de Listas do Professor › Deve realizar login com sucesso e excluir lista
+  [chromium] › professor/listas.spec.ts:21:3 › Fluxos de Listas do Professor › Deve realizar login com sucesso e criar lista
+  [chromium] › professor/listas.spec.ts:37:3 › Fluxos de Listas do Professor › Deve realizar login com sucesso e modificar nome da lista
+  [chromium] › professor/listas.spec.ts:54:3 › Fluxos de Listas do Professor › Deve realizar login com sucesso e manipular questões da lista
+  [chromium] › professor/questoes.spec.ts:5:3 › Fluxos de Questão do Professor › Deve realizar login com sucesso e criar questão
+  [chromium] › professor/questoes.spec.ts:30:3 › Fluxos de Questão do Professor › Deve realizar login com sucesso e excluir questão
+  [chromium] › professor/questoes.spec.ts:45:3 › Fluxos de Questão do Professor › Deve realizar login com sucesso e atualizar questão
+  [chromium] › professor/questoes.spec.ts:68:3 › Fluxos de Questão do Professor › Deve realizar login com sucesso e buscar questão
+  [chromium] › professor/turmas.spec.ts:5:5 › Fluxos de Turmas do Professor › Faz login com sucesso e cria uma turma
+  [chromium] › professor/turmas.spec.ts:21:5 › Fluxos de Turmas do Professor › Faz login com sucesso e edita turma
+  [chromium] › professor/turmas.spec.ts:37:5 › Fluxos de Turmas do Professor › Faz login com sucesso e exclui turma
+  [chromium] › professor/turmas.spec.ts:52:5 › Fluxos de Turmas do Professor › Faz login com sucesso e adiciona um aluno à turma
+  [chromium] › professor/turmas.spec.ts:67:5 › Fluxos de Turmas do Professor › Faz login com sucesso e libera o gabarito de uma lista
+  [chromium] › professor/turmas.spec.ts:87:5 › Fluxos de Turmas do Professor › Faz login com sucesso e remove lista da turma
+  [chromium] › professor/turmas.spec.ts:106:5 › Fluxos de Turmas do Professor › Faz login com sucesso e adiciona lista da turma
+Total: 28 tests in 10 files

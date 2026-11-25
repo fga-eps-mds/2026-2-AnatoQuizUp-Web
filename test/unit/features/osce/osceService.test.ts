@@ -31,9 +31,21 @@ describe('osceService', () => {
   });
 
   describe('listarCenariosOsce', () => {
-    it('devolve a lista de cenarios publicos', async () => {
+    it('devolve a lista de cenarios publicos com o contexto inicial', async () => {
       const cenarios = [
-        { id: 'dor-toracica', titulo: 'Dor torácica', especialidade: 'Cardiologia', dificuldade: 'Médio' },
+        {
+          id: 'dor-toracica',
+          titulo: 'Dor torácica',
+          especialidade: 'Cardiologia',
+          dificuldade: 'Médio',
+          contextoInicial: {
+            local: 'Pronto-socorro',
+            papelEstudante: 'Médico(a) responsável pelo primeiro atendimento',
+            idade: 58,
+            sexo: 'Masculino',
+            queixa: 'Dor torácica',
+          },
+        },
       ];
       httpClientMock.get.mockResolvedValue({ data: { cenarios } });
 
@@ -51,16 +63,29 @@ describe('osceService', () => {
   });
 
   describe('enviarMensagemOsce', () => {
-    it('envia a fala do aluno com o historico e devolve a resposta do paciente', async () => {
+    it('envia a fala do aluno com o historico e devolve os turnos da resposta', async () => {
+      const turnos: TurnoOsce[] = [
+        { autor: 'paciente', texto: 'Tudo bem, doutor.' },
+        { autor: 'exame', exame: 'Eletrocardiograma', texto: 'Ritmo sinusal.' },
+        { autor: 'indisponivel', exame: 'Tomografia', texto: 'Não disponível neste caso.' },
+      ];
+      httpClientMock.post.mockResolvedValue({ data: { resposta: 'Tudo bem, doutor.', turnos } });
+
+      const resultado = await enviarMensagemOsce('dor-toracica', 'Peço um ECG.', historico);
+
+      expect(httpClientMock.post).toHaveBeenCalledWith('/ia/osce/dor-toracica/mensagem', {
+        mensagem: 'Peço um ECG.',
+        historico,
+      });
+      expect(resultado).toEqual(turnos);
+    });
+
+    it('trata a resposta sem turnos (ChatbotOSCE anterior a US25) como fala do paciente', async () => {
       httpClientMock.post.mockResolvedValue({ data: { resposta: 'Dói desde ontem.' } });
 
       const resultado = await enviarMensagemOsce('dor-toracica', 'Desde quando dói?', historico);
 
-      expect(httpClientMock.post).toHaveBeenCalledWith('/ia/osce/dor-toracica/mensagem', {
-        mensagem: 'Desde quando dói?',
-        historico,
-      });
-      expect(resultado).toBe('Dói desde ontem.');
+      expect(resultado).toEqual([{ autor: 'paciente', texto: 'Dói desde ontem.' }]);
     });
 
     it('relanca o erro traduzido quando a chamada falha', async () => {

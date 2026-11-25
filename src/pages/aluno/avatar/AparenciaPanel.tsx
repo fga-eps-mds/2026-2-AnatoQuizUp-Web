@@ -43,7 +43,7 @@ const CORES: { id: CorCerebro; hex: string; label: string }[] = [
 const CABELOS: { id: EstiloCabelo; label: string; imagem: string }[] = [
   { id: 'loiro', label: 'Loiro', imagem: cabeloLoiro },
   { id: 'cacheado', label: 'Cacheado', imagem: cabeloCacheado },
-  { id: 'moicano', label: 'Moicano', imagem: cabeloMoicano },
+  { id: 'moicano', label: 'Topete', imagem: cabeloMoicano },
 ];
 
 // Base liberada da issue #34; os demais acessorios da loja entram depois.
@@ -55,6 +55,8 @@ const ACESSORIOS: { id: EstiloAcessorio; label: string; imagem: string }[] = [
 
 // Luvas: `imagem` e o icone usado na grade; `posicao` e o par (mao esquerda + direita)
 // ja recortado e posicionado para encaixar nas luvas da arte base, usado no overlay.
+// Luvas: `imagem` e o icone usado na grade; `posicao` e o par (mao esquerda + direita)
+// ja recortado e posicionado para encaixar nas luvas da arte base, usado no overlay.
 const LUVAS: { id: EstiloLuva; label: string; imagem: string; posicao: string }[] = [
   { id: 'luva-boxe', label: 'Luva de boxe', imagem: luvaBoxeIcone, posicao: luvaBoxePosicao },
   { id: 'luva-cirurgica', label: 'Luva cirúrgica', imagem: luvaCirurgicaIcone, posicao: luvaCirurgicaPosicao },
@@ -62,6 +64,8 @@ const LUVAS: { id: EstiloLuva; label: string; imagem: string; posicao: string }[
 ];
 
 // Calcados: mesmo esquema das luvas (icone para a grade, par posicionado para o overlay).
+// Calcados: mesmo esquema das luvas (icone para a grade, par posicionado para o overlay).
+// Os 10 novos calcados de US36 (ver aparencia.ts) entram pela loja/inventario, nao aqui.
 const CALCADOS: { id: EstiloCalcado; label: string; imagem: string; posicao: string }[] = [
   { id: 'sapato-plantao', label: 'Sapato de plantão', imagem: calcadoSapatoPlantaoIcone, posicao: calcadoSapatoPlantaoPosicao },
   { id: 'tenis-cano-alto', label: 'Tênis cano alto', imagem: calcadoTenisCanoAltoIcone, posicao: calcadoTenisCanoAltoPosicao },

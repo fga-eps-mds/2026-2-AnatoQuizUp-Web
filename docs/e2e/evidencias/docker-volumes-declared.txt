@@ -1,0 +1,3 @@
+postgres_user_data
+postgres_quiz_data
+minio_data

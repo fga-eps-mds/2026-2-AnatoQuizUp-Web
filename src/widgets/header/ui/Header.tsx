@@ -231,6 +231,13 @@ export const Header = ({ previewUser }: { previewUser?: User } = {}) => {
               location.pathname.startsWith("/professor/questoes") ||
               location.pathname.startsWith("/professor/criar-questao"),
           },
+          {
+            key: "casos-osce",
+            label: "Casos OSCE",
+            icon: Stethoscope,
+            onSelect: () => navigate("/professor/osce"),
+            isActive: location.pathname.startsWith("/professor/osce"),
+          },
           listasItem,
           turmasItem,
           professorRankingItem,

@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { HistoricoListasAluno } from './HistoricoListasAluno';
+import { EvolucaoTemaAluno } from './EvolucaoTemaAluno';
+import { ModalDetalheEntrega } from './ModalDetalheEntrega';
 import { BarChart3, X } from 'lucide-react';
 import { buscarDesempenhoIndividual } from '../../../entities/dashboardTurma/api/dashboardTurmaApi';
 import { buscarUsuariosPorIds } from '../../../entities/usuarios/api/usuarioApi';
@@ -268,9 +271,38 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
             ) : (
               <p className="text-center text-sm text-gray-400">Nenhuma questão respondida ainda.</p>
             )}
+            <AcompanhamentoAluno key={selected.alunoId} turmaId={turmaId} alunoId={selected.alunoId} nomeAluno={selected.usuario?.nome ?? 'Aluno'} />
           </div>
         </div>
       )}
     </>
+  );
+};
+
+const AcompanhamentoAluno = ({ turmaId, alunoId, nomeAluno }: { turmaId: string; alunoId: string; nomeAluno: string }) => {
+  const [evolucao, setEvolucao] = useState(false);
+  const [listaId, setListaId] = useState<string | null>(null);
+
+  return (
+    <div className="mt-5">
+      <div className="flex gap-3 border-b border-gray-200">
+        <button type="button" aria-pressed={!evolucao} onClick={() => setEvolucao(false)}
+          className={`border-b-2 px-3 py-2 text-sm font-bold ${!evolucao ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-600'}`}>
+          Histórico
+        </button>
+        <button type="button" aria-pressed={evolucao} onClick={() => setEvolucao(true)}
+          className={`border-b-2 px-3 py-2 text-sm font-bold ${evolucao ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-600'}`}>
+          Evolução por tema
+        </button>
+      </div>
+      {evolucao ? (
+        <div className="mt-4">
+          <EvolucaoTemaAluno turmaId={turmaId} alunoId={alunoId} onVerEntrega={setListaId} />
+        </div>
+      ) : <HistoricoListasAluno turmaId={turmaId} alunoId={alunoId} onVerEntrega={setListaId} />}
+      {listaId && (
+        <ModalDetalheEntrega turmaId={turmaId} alunoId={alunoId} listaId={listaId} nomeAluno={nomeAluno} onBack={() => setListaId(null)} />
+      )}
+    </div>
   );
 };

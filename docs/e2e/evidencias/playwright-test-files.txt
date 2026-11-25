@@ -1,0 +1,10 @@
+test/tests-e2e/aluno/amizades.spec.ts
+test/tests-e2e/aluno/listas.spec.ts
+test/tests-e2e/aluno/quiz.spec.ts
+test/tests-e2e/auth/autenticacao.spec.ts
+test/tests-e2e/auth/cadastro.spec.ts
+test/tests-e2e/missoes-integracao.spec.ts
+test/tests-e2e/missoes.spec.ts
+test/tests-e2e/professor/listas.spec.ts
+test/tests-e2e/professor/questoes.spec.ts
+test/tests-e2e/professor/turmas.spec.ts

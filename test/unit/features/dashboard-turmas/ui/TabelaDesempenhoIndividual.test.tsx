@@ -1,11 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TabelaDesempenhoIndividual } from '../../../../../src/features/dashboard-turmas/ui/TabelaDesempenhoIndividual';
-import { buscarDesempenhoIndividual } from '../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi';
+import { buscarDesempenhoIndividual, buscarEvolucaoTemasAluno, buscarHistoricoAluno } from '../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi';
 import { buscarUsuariosPorIds } from '../../../../../src/entities/usuarios/api/usuarioApi';
 
 jest.mock('../../../../../src/entities/dashboardTurma/api/dashboardTurmaApi', () => ({
   buscarDesempenhoIndividual: jest.fn(),
+  buscarHistoricoAluno: jest.fn().mockResolvedValue([]),
+  buscarEvolucaoTemasAluno: jest.fn(),
 }));
 
 jest.mock('../../../../../src/entities/usuarios/api/usuarioApi', () => ({
@@ -96,6 +98,27 @@ describe('TabelaDesempenhoIndividual', () => {
     expect(screen.getByText('Desempenho por Tema')).toBeInTheDocument();
     expect(screen.getByText('Tórax')).toBeInTheDocument();
     expect(screen.getByText('90%')).toBeInTheDocument();
+  });
+
+  it('alterna Histórico e Evolução por tema para o mesmo aluno no mesmo modal', async () => {
+    const user = userEvent.setup();
+    mockBuscarIndividual.mockResolvedValue({ alunos: [alunoStats] });
+    mockBuscarUsuarios.mockResolvedValue([alunoUsuario]);
+    jest.mocked(buscarEvolucaoTemasAluno).mockResolvedValue({ alunoId: 'aluno-1', temas: [] });
+
+    render(<TabelaDesempenhoIndividual turmaId="turma-123" />);
+    await user.click(await screen.findByText('João Silva'));
+    expect(await screen.findByText('Nenhuma lista publicada no período.')).toBeInTheDocument();
+    expect(buscarHistoricoAluno).toHaveBeenCalledWith('turma-123', 'aluno-1', expect.any(Object));
+
+    await user.click(screen.getByRole('button', { name: 'Evolução por tema' }));
+    expect(await screen.findByText('Nenhuma lista com temas foi encontrada no período.')).toBeInTheDocument();
+    expect(buscarEvolucaoTemasAluno).toHaveBeenCalledWith('turma-123', 'aluno-1', expect.any(Object));
+    expect(screen.getByText('Desempenho por Tema')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Histórico' }));
+    expect(await screen.findByText('Nenhuma lista publicada no período.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Histórico' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('deve exibir os cards de resumo no modal', async () => {

@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Loader2,
   RefreshCcw,
+  Search,
   Users,
   Eye,
   X,
@@ -17,9 +18,11 @@ import {
 } from '../../../entities/dashboardTurma/api/dashboardTurmaApi';
 import { buscarUsuariosPorIds } from '../../../entities/usuarios/api/usuarioApi';
 import type { DesempenhoLista, DesempenhoListaIndividual } from '../../../entities/dashboardTurma/model/types';
+import { filtrarListasPorNome, normalizarTextoBusca } from '../model/filtrarListasDesempenho';
+import { ModalTopErros } from './ModalTopErros';
 
 interface CardDesempenhoListasProps {
-  turmaId: string;
+  readonly turmaId: string;
 }
 
 /**
@@ -195,14 +198,17 @@ const ModalAlunos = ({ turmaId, listaId, onClose }: { turmaId: string, listaId: 
 
 /**
  * Card do dashboard do professor com o desempenho por lista publicada na turma.
- * Lista as publicacoes com taxa de submissao/acerto e abre o modal de detalhe por aluno.
+ * Lista as publicacoes com taxa de submissao/acerto e abre os modais de detalhe
+ * por aluno e de questoes com mais erros.
  */
 export const CardDesempenhoListas = ({ turmaId }: CardDesempenhoListasProps) => {
-  // Listas com desempenho agregado, estado de carga/erro e lista aberta no modal.
+  // Listas com desempenho agregado, busca textual, estado de carga/erro e listas abertas nos modais.
   const [listas, setListas] = useState<DesempenhoLista[]>([]);
+  const [termoBusca, setTermoBusca] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [listaSelecionadaId, setListaSelecionadaId] = useState<string | null>(null);
+  const [listaTopErros, setListaTopErros] = useState<DesempenhoLista | null>(null);
 
   // Busca o desempenho por lista da turma; memoizado para uso no efeito e no retry.
   const carregarDesempenho = useCallback(async () => {
@@ -221,13 +227,22 @@ export const CardDesempenhoListas = ({ turmaId }: CardDesempenhoListasProps) => 
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
+      setTermoBusca('');
       void carregarDesempenho();
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
   }, [carregarDesempenho]);
 
-  const totalPublicacoes = useMemo(() => listas.length, [listas]);
+  const totalPublicacoes = listas.length;
+  const buscaAtiva = normalizarTextoBusca(termoBusca).length > 0;
+  const listasFiltradas = useMemo(
+    () => filtrarListasPorNome(listas, termoBusca),
+    [listas, termoBusca],
+  );
+  const textoContador = buscaAtiva
+    ? `${listasFiltradas.length} de ${totalPublicacoes} lista(s) publicada(s)`
+    : `${totalPublicacoes} lista(s) publicada(s)`;
 
   // Estado de carregamento.
   if (isLoading) {
@@ -267,7 +282,7 @@ export const CardDesempenhoListas = ({ turmaId }: CardDesempenhoListasProps) => 
         <ClipboardList size={32} className="mb-3 text-gray-300" />
         <h4 className="text-sm font-bold text-gray-900">Nenhuma lista publicada nesta turma.</h4>
         <p className="mt-1 text-xs text-gray-500">
-          As publicacoes aparecem aqui assim que forem vinculadas a turma.
+          As publicações aparecem aqui assim que forem vinculadas à turma.
         </p>
       </div>
     );
@@ -276,83 +291,132 @@ export const CardDesempenhoListas = ({ turmaId }: CardDesempenhoListasProps) => 
   return (
     <div>
       <div className="mb-3 flex items-center justify-between text-xs font-semibold text-gray-500">
-        <span>{totalPublicacoes} lista(s) publicada(s)</span>
-        <span>submissoes</span>
+        <span>{textoContador}</span>
       </div>
 
-      {/* Uma linha por lista publicada: prazo, barra de submissoes e estatisticas. */}
-      <ul className="space-y-3">
-        {listas.map((lista) => {
-          const percentual = calcularPercentual(lista);
-          const temRespostas = lista.totalSubmeteram > 0;
-          const expirado = prazoExpirado(lista.prazo);
+      {/* Campo de busca por nome da lista publicada. */}
+      <label className="mb-3 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 transition-colors focus-within:border-teal-500 focus-within:ring-1 focus-within:ring-teal-500">
+        <Search size={15} className="shrink-0 text-gray-400" aria-hidden="true" />
+        <span className="sr-only">Buscar lista por nome</span>
+        <input
+          type="text"
+          value={termoBusca}
+          onChange={(event) => setTermoBusca(event.target.value)}
+          placeholder="Buscar lista por nome"
+          className="w-full bg-transparent text-xs text-gray-900 outline-none placeholder:text-gray-400"
+        />
+        {termoBusca && (
+          <button
+            type="button"
+            onClick={() => setTermoBusca('')}
+            aria-label="Limpar busca"
+            className="cursor-pointer rounded p-0.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </label>
 
-          return (
-            <li
-              key={lista.listaTurmaId}
-              className="rounded-lg border border-gray-200 bg-gray-50/70 p-4"
-            >
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-gray-900">{lista.nomeLista}</p>
-                  <p
-                    className={`mt-1 flex items-center gap-1.5 text-xs font-medium ${
-                      expirado ? 'text-red-600' : 'text-gray-500'
-                    }`}
-                  >
-                    <CalendarClock size={13} />
-                    {expirado ? 'Prazo expirado' : formatarPrazo(lista.prazo)}
-                  </p>
-                </div>
+      {listasFiltradas.length === 0 ? (
+        <output className="flex w-full flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center">
+          <Search size={24} className="mb-2 text-gray-300" aria-hidden="true" />
+          <p className="text-sm font-bold text-gray-900">Nenhuma lista encontrada.</p>
+          <p className="mt-1 text-xs text-gray-500">
+            Não encontramos listas correspondentes a &ldquo;{termoBusca.trim()}&rdquo;.
+          </p>
+          <button
+            type="button"
+            onClick={() => setTermoBusca('')}
+            className="mt-4 cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-teal-600 transition-colors hover:border-teal-200 hover:bg-teal-50"
+          >
+            Limpar busca
+          </button>
+        </output>
+      ) : (
+        /* Uma linha por lista publicada: prazo, barra de submissoes e estatisticas. */
+        <ul className="space-y-3">
+          {listasFiltradas.map((lista) => {
+            const percentual = calcularPercentual(lista);
+            const temRespostas = lista.totalSubmeteram > 0;
+            const expirado = prazoExpirado(lista.prazo);
 
-                <span className="shrink-0 rounded bg-white px-2 py-1 text-xs font-bold text-gray-700">
-                  {percentual}%
-                </span>
-              </div>
-
-              <div className="mb-4 h-2 rounded-full bg-gray-200">
-                <div
-                  className="h-2 rounded-full bg-teal-500"
-                  style={{ width: `${percentual}%` }}
-                />
-              </div>
-
-              {/* Tres metricas resumidas: responderam, pendentes e acerto medio. */}
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-md bg-white px-2 py-2">
-                  <p className="flex items-center justify-center gap-1 text-sm font-bold text-gray-900">
-                    <CheckCircle2 size={14} className="text-teal-600" />
-                    {lista.totalSubmeteram}
-                  </p>
-                  <p className="text-[11px] font-medium text-gray-500">responderam</p>
-                </div>
-                <div className="rounded-md bg-white px-2 py-2">
-                  <p className="flex items-center justify-center gap-1 text-sm font-bold text-gray-900">
-                    <Users size={14} className="text-amber-600" />
-                    {lista.totalPendentes}
-                  </p>
-                  <p className="text-[11px] font-medium text-gray-500">pendentes</p>
-                </div>
-                <div className="rounded-md bg-white px-2 py-2">
-                  <p className="text-sm font-bold text-gray-900">
-                    {formatarTaxa(lista.taxaMediaAcerto, temRespostas)}
-                  </p>
-                  <p className="text-[11px] font-medium text-gray-500">acerto medio</p>
-                </div>
-              </div>
-              
-              <button 
-                onClick={() => setListaSelecionadaId(lista.listaTurmaId)}
-                className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-white border border-gray-200 py-2 text-[12px] font-bold text-teal-600 hover:bg-teal-50 hover:border-teal-200 transition-colors"
+            return (
+              <li
+                key={lista.listaTurmaId}
+                className="rounded-lg border border-gray-200 bg-gray-50/70 p-4"
               >
-                <Eye size={14} />
-                Ver desempenho dos alunos
-              </button>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-gray-900">{lista.nomeLista}</p>
+                    <p
+                      className={`mt-1 flex items-center gap-1.5 text-xs font-medium ${
+                        expirado ? 'text-red-600' : 'text-gray-500'
+                      }`}
+                    >
+                      <CalendarClock size={13} />
+                      {expirado ? 'Prazo expirado' : formatarPrazo(lista.prazo)}
+                    </p>
+                  </div>
 
-            </li>
-          );
-        })}
-      </ul>
+                  <span className="shrink-0 rounded bg-white px-2 py-1 text-xs font-bold text-gray-700">
+                    {percentual}%
+                  </span>
+                </div>
+
+                <div className="mb-4 h-2 rounded-full bg-gray-200">
+                  <div
+                    className="h-2 rounded-full bg-teal-500"
+                    style={{ width: `${percentual}%` }}
+                  />
+                </div>
+
+                {/* Tres metricas resumidas: responderam, pendentes e acerto medio. */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-md bg-white px-2 py-2">
+                    <p className="flex items-center justify-center gap-1 text-sm font-bold text-gray-900">
+                      <CheckCircle2 size={14} className="text-teal-600" />
+                      {lista.totalSubmeteram}
+                    </p>
+                    <p className="text-[11px] font-medium text-gray-500">responderam</p>
+                  </div>
+                  <div className="rounded-md bg-white px-2 py-2">
+                    <p className="flex items-center justify-center gap-1 text-sm font-bold text-gray-900">
+                      <Users size={14} className="text-amber-600" />
+                      {lista.totalPendentes}
+                    </p>
+                    <p className="text-[11px] font-medium text-gray-500">pendentes</p>
+                  </div>
+                  <div className="rounded-md bg-white px-2 py-2">
+                    <p className="text-sm font-bold text-gray-900">
+                      {formatarTaxa(lista.taxaMediaAcerto, temRespostas)}
+                    </p>
+                    <p className="text-[11px] font-medium text-gray-500">acerto médio</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setListaSelecionadaId(lista.listaTurmaId)}
+                  className="mt-3 w-full cursor-pointer flex items-center justify-center gap-2 rounded-lg bg-white border border-gray-200 py-2 text-[12px] font-bold text-teal-600 hover:bg-teal-50 hover:border-teal-200 transition-colors"
+                >
+                  <Eye size={14} /> Ver desempenho dos alunos
+                </button>
+
+                {/* Botao para abrir o modal de questoes com mais erros desta lista. */}
+                <button
+                  type="button"
+                  onClick={() => setListaTopErros(lista)}
+                  className="mt-2 w-full cursor-pointer flex items-center justify-center gap-2 rounded-lg bg-white border border-gray-200 py-2 text-[12px] font-bold text-teal-600 hover:bg-teal-50 hover:border-teal-200 transition-colors"
+                >
+                  <Eye size={14} />
+                  Ver questões com mais erros
+                </button>
+
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {/* Modal de detalhe por aluno da lista selecionada. */}
       {listaSelecionadaId && (
@@ -360,6 +424,16 @@ export const CardDesempenhoListas = ({ turmaId }: CardDesempenhoListasProps) => 
           turmaId={turmaId} 
           listaId={listaSelecionadaId} 
           onClose={() => setListaSelecionadaId(null)} 
+        />
+      )}
+
+      {/* Modal de questoes com mais erros da lista selecionada. */}
+      {listaTopErros && (
+        <ModalTopErros
+          turmaId={turmaId}
+          listaId={listaTopErros.listaTurmaId}
+          nomeLista={listaTopErros.nomeLista}
+          onClose={() => setListaTopErros(null)}
         />
       )}
 
