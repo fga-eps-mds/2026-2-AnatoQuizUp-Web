@@ -73,8 +73,11 @@ const Circulo = ({ identidade, cosmeticos, tamanho }: CirculoProps) => {
 
   let conteudo;
 
+  // Plano de fundo equipado: aparece atras do avatar, dentro do circulo.
+  const fundo = cosmeticos.PLANO_FUNDO?.valor;
+
   if (identidade.usuarioId || identidade.preferirAvatarCerebro) {
-    conteudo = <AvatarCerebro aparencia={aparencia} nome={identidade.nome} className={dimensao} />;
+    conteudo = <AvatarCerebro aparencia={aparencia} nome={identidade.nome} className={dimensao} fundo={fundo} />;
   } else if (avatar && avatarSrc) {
     conteudo = (
       <img
@@ -135,7 +138,7 @@ const Circulo = ({ identidade, cosmeticos, tamanho }: CirculoProps) => {
   // Prioridade 4 (fallback): iniciais do nome sobre gradiente padrao.
   } else {
     conteudo = identidade.usuarioId
-      ? <AvatarCerebro aparencia={aparencia} nome={identidade.nome} className={dimensao} />
+      ? <AvatarCerebro aparencia={aparencia} nome={identidade.nome} className={dimensao} fundo={fundo} />
       : <div className={`${dimensao} flex items-center justify-center rounded-full bg-gradient-to-br from-[#0A1128] to-[#0d9488] font-black text-[#71edc8] ${TAMANHO_TEXTO[tamanho]}`}>
           {montarIniciais(identidade.nome)}
         </div>;
@@ -190,11 +193,12 @@ export const ProfileIdentityCard = ({
   // Variante completa (md/lg): banner com plano de fundo, avatar sobreposto e infos.
   return (
     <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-      {/* Banner superior com o plano de fundo equipado (ou gradiente padrao). */}
+      {/* Banner superior com o gradiente padrao; o plano de fundo equipado aparece
+          atras do avatar, dentro do circulo. */}
       <div
-        aria-label="Plano de fundo do perfil"
+        aria-label="Banner do perfil"
         className={`relative overflow-hidden rounded-t-2xl ${TAMANHO_BANNER[tamanho]}`}
-        style={{ background: fundo?.valor ?? GRADIENTE_TEAL }}
+        style={{ background: GRADIENTE_TEAL }}
       >
         {!readOnly && fundo && (
           <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">

@@ -30,7 +30,7 @@ describe('ProfileIdentityCard', () => {
     render(<ProfileIdentityCard identidade={identidade} tamanho="sm" />);
 
     expect(screen.getByText('JS')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Plano de fundo do perfil')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Banner do perfil')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'João Silva' })).not.toBeInTheDocument();
   });
 
@@ -51,7 +51,7 @@ describe('ProfileIdentityCard', () => {
   it('renderiza card md com banner, iniciais e nome', () => {
     render(<ProfileIdentityCard identidade={identidade} />);
 
-    expect(screen.getByLabelText('Plano de fundo do perfil')).toBeInTheDocument();
+    expect(screen.getByLabelText('Banner do perfil')).toBeInTheDocument();
     expect(screen.getByText('JS')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'João Silva' })).toBeInTheDocument();
     expect(screen.queryByText(/^@/)).not.toBeInTheDocument();
@@ -83,9 +83,8 @@ describe('ProfileIdentityCard', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Plano de fundo do perfil')).toHaveStyle({
-      background: '#123456',
-    });
+    // O fundo equipado vai para dentro do circulo do avatar; o banner fica no padrao.
+    expect(screen.getByLabelText('Banner do perfil')).not.toHaveStyle({ background: '#123456' });
     expect(screen.getByLabelText('Moldura Dourada')).toHaveStyle({
       background: '#FCD34D',
     });
@@ -178,7 +177,7 @@ describe('ProfileIdentityCard', () => {
   it('renderiza card completo no tamanho lg', () => {
     render(<ProfileIdentityCard identidade={identidade} tamanho="lg" />);
 
-    expect(screen.getByLabelText('Plano de fundo do perfil')).toBeInTheDocument();
+    expect(screen.getByLabelText('Banner do perfil')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'João Silva' })).toBeInTheDocument();
   });
 

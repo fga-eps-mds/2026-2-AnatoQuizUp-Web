@@ -47,6 +47,7 @@ import {
   ModalResultadoCompra,
   type ResultadoCompra,
 } from "../../../../features/loja/ui/ModalResultadoCompra";
+import { useEquippedCosmeticsStore } from "../../../../features/profile-cosmetics";
 import { useStudentCoinsStore } from "../../../../features/student-coins/model/useStudentCoinsStore";
 import { CosmeticPreview } from "../../../../shared/ui/cosmetics";
 import { useAparenciaAvatar } from "../../../../shared/avatar/useAparenciaAvatar";
@@ -115,6 +116,7 @@ export const LojaPage = () => {
   // Aparencia salva do aluno, usada para pre-visualizar itens de avatar no modal.
   const { user } = useAuth();
   const aparenciaAtual = useAparenciaAvatar(user?.id);
+  const fundoAtual = useEquippedCosmeticsStore((state) => state.cosmeticos.PLANO_FUNDO?.valor);
   const [itemParaUsar, setItemParaUsar] = useState<InventarioItem | null>(null);
   // Id em compra (trava os botoes), resultado da compra (modal), erro e recarga.
   const [comprandoId, setComprandoId] = useState<string | null>(null);
@@ -497,6 +499,7 @@ export const LojaPage = () => {
         <ModalConfirmarCompra
           item={itemSelecionado}
           aparenciaAtual={aparenciaAtual}
+          fundoAtual={fundoAtual}
           saldoMoedas={saldoMoedas}
           comprando={comprandoId === itemSelecionado.id}
           onCancelar={() => setItemSelecionado(null)}

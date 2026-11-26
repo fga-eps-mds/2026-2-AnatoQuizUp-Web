@@ -61,7 +61,6 @@
 .profile-equipped-item span{font-size:11px;color:#7d879d;font-weight:700}
 .profile-equipped-item strong{font-size:14px;color:#17264a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.profile-identity-accent{position:absolute;inset:0 0 auto;height:8px;border-radius:10px 10px 0 0}
 .profile-avatar-wrap{position:relative;margin:4px auto 8px;min-height:104px;display:grid;place-items:center}
 .profile-equipped-title{color:#a5660b;font-size:13px;font-weight:700}
 .profile-atp{display:flex;align-items:center;gap:7px;margin:6px 0 12px;color:#a05b08;font-weight:750;font-size:15px}

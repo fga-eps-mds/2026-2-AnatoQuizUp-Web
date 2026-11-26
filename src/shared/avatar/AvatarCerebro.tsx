@@ -140,10 +140,12 @@ const calcados = {
 };
 const overlay: CSSProperties = { position: 'absolute', transform: 'translate(-50%, -50%)', height: 'auto' };
 
-export function AvatarCerebro({ aparencia, nome, className = '' }: {
+export function AvatarCerebro({ aparencia, nome, className = '', fundo }: {
   aparencia: AparenciaAvatar;
   nome?: string;
   className?: string;
+  /** Plano de fundo equipado (cor ou gradiente): preenche o circulo atras do cerebro. */
+  fundo?: string | null;
 }) {
   const cabelo = aparencia.cabelo ? cabelos[aparencia.cabelo] : null;
   const acessorio = aparencia.acessorio ? acessorios[aparencia.acessorio] : null;
@@ -153,7 +155,11 @@ export function AvatarCerebro({ aparencia, nome, className = '' }: {
   const topComCabelo = acessorio && 'topComCabelo' in acessorio ? acessorio.topComCabelo as string : undefined;
   const topAcessorio = cabelo && !acessorioRosto && topComCabelo ? topComCabelo : acessorio?.top;
   return (
-    <div className={`relative isolate overflow-hidden rounded-full bg-[#e5fbf8] ${className}`}>
+    <div
+      className={`relative isolate overflow-hidden rounded-full bg-[#e5fbf8] ${className}`}
+      style={fundo ? { background: fundo } : undefined}
+      data-fundo={fundo ? 'personalizado' : 'padrao'}
+    >
       <img src={avatarBase} alt={nome ? `Avatar de ${nome}` : 'Cérebro do AnatoQuizUp'}
         className="h-full w-full object-contain"
         style={{ filter: `hue-rotate(${HUE_ROTATE_COR[aparencia.corCerebro]}deg)` }} />

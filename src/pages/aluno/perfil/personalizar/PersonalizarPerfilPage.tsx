@@ -42,7 +42,7 @@ const ABAS: { id: string; tipos: TipoItemLoja[]; label: string; descricao: strin
     id: 'PLANO_FUNDO',
     tipos: ['PLANO_FUNDO'],
     label: 'Fundos',
-    descricao: 'Aplicado ao topo da sua página de perfil.',
+    descricao: 'Aparece atrás do seu avatar.',
   },
 ];
 

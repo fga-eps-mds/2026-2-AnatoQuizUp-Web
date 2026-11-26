@@ -24,6 +24,8 @@ type ModalConfirmarCompraProps = {
   onConfirmar: (quantidade: number) => void;
   /** Aparencia salva do aluno: base da pre-visualizacao do item no avatar. */
   aparenciaAtual?: AparenciaAvatar;
+  /** Plano de fundo equipado, mostrado atras do avatar na pre-visualizacao. */
+  fundoAtual?: string | null;
 };
 
 /**
@@ -43,6 +45,7 @@ export const ModalConfirmarCompra = ({
   onCancelar,
   onConfirmar,
   aparenciaAtual,
+  fundoAtual,
 }: ModalConfirmarCompraProps) => {
   const tituloId = useId();
   const [quantidade, setQuantidade] = useState(1);
@@ -101,6 +104,7 @@ export const ModalConfirmarCompra = ({
                 aparencia={verAvatarSalvo ? aparenciaAtual : aparenciaComItem}
                 nome="você"
                 className="h-36 w-36"
+                fundo={fundoAtual}
               />
               <figcaption className="text-xs font-bold text-[#0A1128]/55">
                 {verAvatarSalvo ? 'Seu avatar como está agora' : 'Como fica no seu avatar'}

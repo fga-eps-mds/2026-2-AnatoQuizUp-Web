@@ -169,7 +169,6 @@ export const PerfilAlunoPage = ({ previewUser }: { previewUser?: User } = {}) =>
     <div className="profile-layout">
       <div className="profile-left">
         <section className="profile-identity-card" aria-label="Identidade do aluno">
-          {cosmeticos.PLANO_FUNDO?.valor && <div className="profile-identity-accent" style={{ background: cosmeticos.PLANO_FUNDO.valor }} />}
           <button className="profile-edit-button" type="button" aria-label="Editar informações" onClick={() => navigate('/aluno/perfil/editar')}><Pencil size={20} /></button>
           <div className="profile-avatar-wrap"><AvatarCosmetico identidade={{ nome: user.name, usuarioId: user.id, preferirAvatarCerebro: true }} cosmeticos={cosmeticos} tamanho="lg" /><span className="profile-presence" /></div>
           <h3>Aluno</h3>

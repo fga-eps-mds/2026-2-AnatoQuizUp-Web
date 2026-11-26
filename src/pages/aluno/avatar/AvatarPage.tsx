@@ -8,6 +8,7 @@ import {
   type InventarioItem,
   type ItemLoja,
 } from '../../../features/loja';
+import { useEquippedCosmeticsStore } from '../../../features/profile-cosmetics';
 import { AvatarCerebro } from '../../../shared/avatar/AvatarCerebro';
 import { buscarAparenciaRemota, salvarAparenciaRemota } from '../../../shared/avatar/avatarApi';
 import { carregarAparencia, salvarAparencia as persistirAparencia } from '../../../shared/avatar/useAparenciaAvatar';
@@ -42,6 +43,8 @@ export function AvatarPage() {
   const [salvando, setSalvando] = useState(false);
   const [itensComprados, setItensComprados] = useState<InventarioItem[]>([]);
   const [itensLoja, setItensLoja] = useState<ItemLoja[]>([]);
+  // Plano de fundo equipado: aparece atras do avatar, dentro do circulo.
+  const fundo = useEquippedCosmeticsStore((state) => state.cosmeticos.PLANO_FUNDO?.valor);
   const userId = user?.id;
 
   // Carrega a aparencia salva assim que o usuario autenticado fica disponivel.
@@ -162,7 +165,7 @@ export function AvatarPage() {
             </div>
             <div className="avatar-only-circle">
               <div className="avatar-only-shadow" />
-              <AvatarCerebro aparencia={rascunho} className="h-full w-full" />
+              <AvatarCerebro aparencia={rascunho} className="h-full w-full" fundo={fundo} />
             </div>
             <button className="avatar-only-restore" type="button" onClick={() => void restore()} disabled={carregando || salvando}>
               <RotateCcw size={22} aria-hidden="true" />
