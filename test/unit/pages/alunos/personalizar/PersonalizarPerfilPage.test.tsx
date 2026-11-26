@@ -343,4 +343,29 @@ describe('PersonalizarPerfilPage', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith('/aluno/loja');
   });
+
+  it('mostra a prévia do item bloqueado sem imagem quebrada (moldura e fundo usam o valor)', async () => {
+    const molduraBloqueada = { ...ITEM_CEREBRO, id: 'moldura-dourada', nome: 'Dourada', valor: '#FCD34D' };
+    const fundoBloqueado = {
+      ...ITEM_CEREBRO,
+      id: 'fundo-azul',
+      codigo: 'fundo-azul-noturno',
+      nome: 'Azul Noturno',
+      tipo: 'PLANO_FUNDO',
+      valor: '#0A1128',
+    };
+    mockedHttpClient.get.mockResolvedValueOnce({ data: { dados: [] } } as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce(catalogoDe(molduraBloqueada, fundoBloqueado) as AxiosResponse);
+
+    renderWithProviders(<PersonalizarPerfilPage />);
+    const cartaoMoldura = (await screen.findByText('Dourada')).closest('button')!;
+
+    expect(cartaoMoldura.querySelector('img')).toBeNull();
+    expect(cartaoMoldura.querySelector('[style*="background"]')).toHaveStyle({ background: '#FCD34D' });
+
+    fireEvent.click(screen.getByText('Fundos'));
+    const cartaoFundo = (await screen.findByText('Azul Noturno')).closest('button')!;
+    expect(cartaoFundo.querySelector('img')).toBeNull();
+    expect(cartaoFundo.querySelector('[style*="background"]')).toHaveStyle({ background: '#0A1128' });
+  });
 });

@@ -161,12 +161,10 @@ const GradeDoTipo = ({
               onClick={onIrParaLoja}
               className="relative flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-4 opacity-70 transition-all hover:border-[#F97316]"
             >
-              <div className="flex h-24 w-full items-center justify-center">
-                <img
-                  src={itemCatalogo.previewImagemUrl || itemCatalogo.imagemUrl || undefined}
-                  alt={itemCatalogo.nome}
-                  className="h-20 w-20 rounded-2xl object-contain grayscale"
-                />
+              {/* Mesma previa dos itens possuidos (molduras, titulos e fundos sao
+                  desenhados a partir do `valor`, sem imagem), em tons de cinza. */}
+              <div className="flex h-24 w-full items-center justify-center grayscale">
+                <PreviaItem tipo={tipo} item={itemCatalogo} />
               </div>
               <div className="flex flex-col items-center">
                 <span className="text-center text-sm font-black leading-tight text-gray-400">
