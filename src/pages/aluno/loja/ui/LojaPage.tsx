@@ -1,5 +1,5 @@
 // Pagina da Loja Virtual do aluno. Lista o catalogo (itens consumiveis — dicas e
-// potencializadores — e cosmeticos: icones, molduras, avatares, titulos e fundos)
+// potencializadores — e cosmeticos: molduras, titulos, fundos e itens do avatar)
 // e o inventario ja adquirido, permitindo filtrar por categoria, ordenar por
 // preco e comprar itens com as moedas ATP do aluno. Toda compra passa pelo modal
 // de confirmacao, e o resultado (sucesso ou saldo insuficiente) aparece em outro modal.
@@ -22,10 +22,8 @@ import {
   Palette,
   Scissors,
   ShoppingBag,
-  Smile,
   Lightbulb,
   Sparkles,
-  UserRound,
   X,
   Zap,
 } from "lucide-react";
@@ -63,9 +61,7 @@ const CATEGORIAS: { key: Aba; label: string; icon: LucideIcon }[] = [
   { key: "TODOS", label: "Todos", icon: LayoutGrid },
   { key: "DICA", label: "Dicas", icon: Lightbulb },
   { key: "POTENCIALIZADOR", label: "Potencializadores", icon: Zap },
-  { key: "ICONE_PERFIL", label: "Ícones", icon: Smile },
   { key: "MOLDURA", label: "Molduras", icon: Frame },
-  { key: "AVATAR", label: "Avatares", icon: UserRound },
   { key: "TITULO", label: "Títulos", icon: BadgeCheck },
   { key: "PLANO_FUNDO", label: "Fundos", icon: Palette },
   { key: "CABELO", label: "Cabelos", icon: Scissors },
