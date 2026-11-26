@@ -292,4 +292,32 @@ describe('ProfileIdentityCard', () => {
 
     expect(screen.queryByText('Fundo: Textura Anatomica')).not.toBeInTheDocument();
   });
+
+  describe('fundo atrás do avatar', () => {
+    const identidadeCerebro = { nome: 'João Silva', preferirAvatarCerebro: true };
+    const circuloDoAvatar = () =>
+      screen.getByRole('img', { name: 'Avatar de João Silva' }).parentElement!;
+
+    it('com fundo escolhido, o fundo preenche o círculo do avatar', () => {
+      const fundo = criarItem('PLANO_FUNDO', { nome: 'Oceano', valor: '#123456' });
+
+      render(<ProfileIdentityCard identidade={identidadeCerebro} cosmeticos={{ PLANO_FUNDO: fundo }} />);
+
+      expect(circuloDoAvatar()).toHaveStyle({ background: '#123456' });
+    });
+
+    it('sem fundo escolhido, o círculo fica no padrão', () => {
+      render(<ProfileIdentityCard identidade={identidadeCerebro} />);
+
+      expect(circuloDoAvatar()).toHaveAttribute('data-fundo', 'padrao');
+    });
+
+    it('também no avatar compacto (menu e ranking)', () => {
+      const fundo = criarItem('PLANO_FUNDO', { nome: 'Oceano', valor: '#123456' });
+
+      render(<ProfileIdentityCard identidade={identidadeCerebro} tamanho="sm" cosmeticos={{ PLANO_FUNDO: fundo }} />);
+
+      expect(circuloDoAvatar()).toHaveStyle({ background: '#123456' });
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 import { AvatarCerebro } from '../../../../src/shared/avatar/AvatarCerebro';
 import { APARENCIA_PADRAO } from '../../../../src/shared/avatar/aparencia';
@@ -39,5 +39,21 @@ describe('AvatarCerebro - itens equipados', () => {
 
     const [cabelo, acessorio] = Array.from(camadas(container)) as HTMLImageElement[];
     expect(Number(acessorio.style.zIndex)).toBeLessThan(Number(cabelo.style.zIndex));
+  });
+
+  it('usa o fundo equipado atrás do cérebro', () => {
+    render(<AvatarCerebro aparencia={APARENCIA_PADRAO} nome="Ana" fundo="#123456" />);
+
+    const circulo = screen.getByRole('img', { name: 'Avatar de Ana' }).parentElement!;
+    expect(circulo).toHaveStyle({ background: '#123456' });
+    expect(circulo).toHaveAttribute('data-fundo', 'personalizado');
+  });
+
+  it('mantém o fundo padrão sem fundo equipado', () => {
+    render(<AvatarCerebro aparencia={APARENCIA_PADRAO} nome="Ana" fundo={null} />);
+
+    const circulo = screen.getByRole('img', { name: 'Avatar de Ana' }).parentElement!;
+    expect(circulo).not.toHaveAttribute('style');
+    expect(circulo).toHaveAttribute('data-fundo', 'padrao');
   });
 });
