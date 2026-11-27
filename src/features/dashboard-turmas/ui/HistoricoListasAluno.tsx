@@ -7,7 +7,11 @@ type Estado =
 
 const dataPublicacao = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' });
 
-export const HistoricoListasAluno = ({ turmaId, alunoId }: { turmaId: string; alunoId: string }) => {
+export const HistoricoListasAluno = ({ turmaId, alunoId, onVerEntrega }: {
+  turmaId: string;
+  alunoId: string;
+  onVerEntrega?: (listaId: string) => void;
+}) => {
   const hoje = new Date();
   const ano = hoje.getFullYear();
   const [semestre, setSemestre] = useState(hoje.getMonth() < 6 ? 1 : 2);
@@ -71,7 +75,14 @@ export const HistoricoListasAluno = ({ turmaId, alunoId }: { turmaId: string; al
                   <tr key={lista.listaTurmaId} className="border-t border-gray-100">
                     <td className="whitespace-nowrap py-3 pr-4">{dataPublicacao.format(new Date(lista.publicadaEm))}</td>
                     <td className="py-3 pr-4">{lista.nomeLista}</td>
-                    <td>{lista.status === 'ENTREGUE' ? 'Entregue' : 'Pendente'}</td>
+                    <td>
+                      {lista.status === 'ENTREGUE' ? 'Entregue' : 'Pendente'}
+                      {lista.status === 'ENTREGUE' && onVerEntrega && (
+                        <button type="button" className="ml-3 font-semibold text-teal-700" onClick={() => onVerEntrega(lista.listaTurmaId)}>
+                          Ver entrega
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

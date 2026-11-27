@@ -4,6 +4,7 @@ import { buscarEvolucaoTemasAluno } from '../../../entities/dashboardTurma/api/d
 import type { EvolucaoTema } from '../../../entities/dashboardTurma/model/types';
 
 type Props = {
+  onVerEntrega?: (listaId: string) => void;
   turmaId: string;
   alunoId: string;
   periodo?: { inicio: string; fim: string };
@@ -35,7 +36,7 @@ const formatarVariacao = (variacao: number | null) => {
   return `${variacao > 0 ? '+' : ''}${variacao} pontos percentuais`;
 };
 
-export const EvolucaoTemaAluno = ({ turmaId, alunoId, periodo }: Props) => {
+export const EvolucaoTemaAluno = ({ turmaId, alunoId, periodo, onVerEntrega }: Props) => {
   const agora = new Date();
   const anoAtual = agora.getFullYear();
   const [semestre, setSemestre] = useState<Semestre>(agora.getMonth() < 6 ? 1 : 2);
@@ -113,8 +114,8 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, periodo }: Props) => {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4">
-        <div className="flex flex-wrap gap-2">
+      <div className="mb-4 flex items-start gap-3 border-b border-gray-100 pb-4">
+        <div className="flex min-w-0 flex-1 flex-wrap gap-2">
           {temas.map((tema) => {
             const selecionado = tema.temaId === temaSelecionadoId;
             return (
@@ -122,7 +123,7 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, periodo }: Props) => {
                 key={tema.temaId}
                 type="button"
                 onClick={() => setTemaSelecionadoId(tema.temaId)}
-                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                className={`max-w-full break-words rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                   selecionado
                     ? 'border-teal-100 bg-teal-50 text-teal-700'
                     : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
@@ -135,7 +136,7 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, periodo }: Props) => {
         </div>
 
         {!periodo && (
-          <div className="flex gap-2" aria-label={`Período de ${anoAtual}`}>
+          <div className="flex shrink-0 gap-2 whitespace-nowrap" aria-label={`Período de ${anoAtual}`}>
             {([1, 2] as const).map((opcao) => (
               <button
                 key={opcao}
@@ -184,6 +185,11 @@ export const EvolucaoTemaAluno = ({ turmaId, alunoId, periodo }: Props) => {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 font-semibold text-gray-900">
                         {entregue ? `${resultado.taxaAcerto}%` : '—'}
+                        {entregue && onVerEntrega && (
+                          <button type="button" className="ml-3 font-semibold text-teal-700" onClick={() => onVerEntrega(resultado.listaTurmaId)}>
+                            Ver entrega
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

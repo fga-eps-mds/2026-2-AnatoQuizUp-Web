@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { HistoricoListasAluno } from './HistoricoListasAluno';
 import { EvolucaoTemaAluno } from './EvolucaoTemaAluno';
+import { ModalDetalheEntrega } from './ModalDetalheEntrega';
 import { BarChart3, X } from 'lucide-react';
 import { buscarDesempenhoIndividual } from '../../../entities/dashboardTurma/api/dashboardTurmaApi';
 import { buscarUsuariosPorIds } from '../../../entities/usuarios/api/usuarioApi';
@@ -203,74 +204,76 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
       {/* Modal de detalhe do aluno selecionado: resumo e desempenho por tema. */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
-            <div className="mb-5 flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${avatarColor(selected.alunoId)}`}
+          <div className="w-full max-w-[640px] overflow-hidden rounded-xl bg-white shadow-xl">
+            <div className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-6">
+              <div className="mb-5 flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${avatarColor(selected.alunoId)}`}
+                  >
+                    {initials(selected.usuario?.nome ?? '?')}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900">{selected.usuario?.nome ?? 'Aluno'}</h3>
+                    <p className="text-sm text-gray-400">{selected.usuario?.email}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Fechar detalhes do aluno"
+                  onClick={() => setSelected(null)}
+                  className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
                 >
-                  {initials(selected.usuario?.nome ?? '?')}
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{selected.usuario?.nome ?? 'Aluno'}</h3>
-                  <p className="text-sm text-gray-400">{selected.usuario?.email}</p>
-                </div>
+                  <X size={18} />
+                </button>
               </div>
-              <button
-                type="button"
-                aria-label="Fechar detalhes do aluno"
-                onClick={() => setSelected(null)}
-                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            {/* Cards de resumo: questoes, acertos e taxa geral. */}
-            <div className="mb-5 grid grid-cols-3 gap-3">
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className="text-lg font-bold text-gray-900">{selected.totalRespondidas}</p>
-                <p className="text-xs text-gray-500">Questões</p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className="text-lg font-bold text-green-600">{selected.totalAcertos}</p>
-                <p className="text-xs text-gray-500">Acertos</p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-3 text-center">
-                <p className={`text-lg font-bold ${textColor(selected.taxaAcerto)}`}>{selected.taxaAcerto}%</p>
-                <p className="text-xs text-gray-500">Taxa Geral</p>
-              </div>
-            </div>
-
-            {selected.desempenhoPorTema.length > 0 ? (
-              <>
-                <div className="mb-3 flex items-center gap-2">
-                  <BarChart3 size={16} className="text-gray-400" />
-                  <span className="text-sm font-bold text-gray-700">Desempenho por Tema</span>
+              {/* Cards de resumo: questoes, acertos e taxa geral. */}
+              <div className="mb-5 grid grid-cols-3 gap-3">
+                <div className="rounded-lg bg-gray-50 p-3 text-center">
+                  <p className="text-lg font-bold text-gray-900">{selected.totalRespondidas}</p>
+                  <p className="text-xs text-gray-500">Questões</p>
                 </div>
-                <div className="max-h-64 space-y-3 overflow-y-auto">
-                  {selected.desempenhoPorTema.map((tema) => (
-                    <div key={tema.nome} className="flex items-center gap-3">
-                      <span className="w-1/3 truncate text-sm font-medium text-gray-700">{tema.nome}</span>
-                      <div className="flex-1">
-                        <div className="h-2 w-full rounded-full bg-gray-100">
-                          <div
-                            className={`h-2 rounded-full ${barColor(tema.taxaAcerto)}`}
-                            style={{ width: `${tema.taxaAcerto}%` }}
-                          />
+                <div className="rounded-lg bg-gray-50 p-3 text-center">
+                  <p className="text-lg font-bold text-green-600">{selected.totalAcertos}</p>
+                  <p className="text-xs text-gray-500">Acertos</p>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-3 text-center">
+                  <p className={`text-lg font-bold ${textColor(selected.taxaAcerto)}`}>{selected.taxaAcerto}%</p>
+                  <p className="text-xs text-gray-500">Taxa Geral</p>
+                </div>
+              </div>
+
+              {selected.desempenhoPorTema.length > 0 ? (
+                <>
+                  <div className="mb-3 flex items-center gap-2">
+                    <BarChart3 size={16} className="text-gray-400" />
+                    <span className="text-sm font-bold text-gray-700">Desempenho por Tema</span>
+                  </div>
+                  <div className="max-h-64 space-y-3 overflow-y-auto">
+                    {selected.desempenhoPorTema.map((tema) => (
+                      <div key={tema.nome} className="flex items-center gap-3">
+                        <span className="w-1/3 truncate text-sm font-medium text-gray-700">{tema.nome}</span>
+                        <div className="flex-1">
+                          <div className="h-2 w-full rounded-full bg-gray-100">
+                            <div
+                              className={`h-2 rounded-full ${barColor(tema.taxaAcerto)}`}
+                              style={{ width: `${tema.taxaAcerto}%` }}
+                            />
+                          </div>
                         </div>
+                        <span className={`w-10 text-right text-sm font-bold ${textColor(tema.taxaAcerto)}`}>
+                          {tema.taxaAcerto}%
+                        </span>
                       </div>
-                      <span className={`w-10 text-right text-sm font-bold ${textColor(tema.taxaAcerto)}`}>
-                        {tema.taxaAcerto}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="text-center text-sm text-gray-400">Nenhuma questão respondida ainda.</p>
-            )}
-            <AcompanhamentoAluno key={selected.alunoId} turmaId={turmaId} alunoId={selected.alunoId} />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-sm text-gray-400">Nenhuma questão respondida ainda.</p>
+              )}
+              <AcompanhamentoAluno key={selected.alunoId} turmaId={turmaId} alunoId={selected.alunoId} />
+            </div>
           </div>
         </div>
       )}
@@ -280,24 +283,37 @@ export const TabelaDesempenhoIndividual = ({ turmaId }: Props) => {
 
 const AcompanhamentoAluno = ({ turmaId, alunoId }: { turmaId: string; alunoId: string }) => {
   const [evolucao, setEvolucao] = useState(false);
+  const [listaId, setListaId] = useState<string | null>(null);
 
   return (
     <div className="mt-5">
       <div className="flex gap-3 border-b border-gray-200">
-        <button type="button" aria-pressed={!evolucao} onClick={() => setEvolucao(false)}
+        <button type="button" aria-pressed={!evolucao} onClick={() => { setListaId(null); setEvolucao(false); }}
           className={`border-b-2 px-3 py-2 text-sm font-bold ${!evolucao ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-600'}`}>
           Histórico
         </button>
-        <button type="button" aria-pressed={evolucao} onClick={() => setEvolucao(true)}
+        <button type="button" aria-pressed={evolucao} onClick={() => { setListaId(null); setEvolucao(true); }}
           className={`border-b-2 px-3 py-2 text-sm font-bold ${evolucao ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-600'}`}>
           Evolução por tema
         </button>
       </div>
-      {evolucao ? (
-        <div className="mt-4">
-          <EvolucaoTemaAluno turmaId={turmaId} alunoId={alunoId} />
-        </div>
-      ) : <HistoricoListasAluno turmaId={turmaId} alunoId={alunoId} />}
+      <div hidden={listaId !== null}>
+        {evolucao ? (
+          <div className="mt-4">
+            <EvolucaoTemaAluno turmaId={turmaId} alunoId={alunoId} onVerEntrega={setListaId} />
+          </div>
+        ) : <HistoricoListasAluno turmaId={turmaId} alunoId={alunoId} onVerEntrega={setListaId} />}
+      </div>
+      {listaId && (
+        <ModalDetalheEntrega
+          key={listaId}
+          turmaId={turmaId}
+          alunoId={alunoId}
+          listaId={listaId}
+          rotuloVoltar={evolucao ? 'Voltar à evolução' : 'Voltar ao histórico'}
+          onBack={() => setListaId(null)}
+        />
+      )}
     </div>
   );
 };
