@@ -1,5 +1,5 @@
 import { APARENCIA_PADRAO, type AparenciaAvatar } from './aparencia';
-import { carregarAparencia, salvarAparencia } from './useAparenciaAvatar';
+import { aplicarItemNaAparencia, carregarAparencia, salvarAparencia } from './useAparenciaAvatar';
 
 describe('armazenamento da aparência do avatar', () => {
   beforeEach(() => {
@@ -75,5 +75,32 @@ describe('armazenamento da aparência do avatar', () => {
     salvarAparencia('aluna-1', { ...APARENCIA_PADRAO, luva });
 
     expect(carregarAparencia('aluna-1')).toEqual({ ...APARENCIA_PADRAO, luva });
+  });
+});
+
+describe('aplicarItemNaAparencia', () => {
+  const salvo = { ...APARENCIA_PADRAO, cabelo: 'loiro' as const, luva: 'luva-boxe' as const };
+
+  it.each([
+    ['CABELO', 'trancas', { cabelo: 'trancas' }],
+    ['ACESSORIO', 'chapeu-cowboy', { acessorio: 'chapeu-cowboy' }],
+    ['LUVA', 'luva-goleiro', { luva: 'luva-goleiro' }],
+    ['CALCADO', 'bota-coturno', { calcado: 'bota-coturno' }],
+  ])('aplica o item %s %s no seu slot, mantendo os outros', (tipo, codigo, esperado) => {
+    expect(aplicarItemNaAparencia(salvo, { tipo, codigo })).toEqual({ ...salvo, ...esperado });
+  });
+
+  it('não altera a aparência recebida', () => {
+    aplicarItemNaAparencia(salvo, { tipo: 'CABELO', codigo: 'trancas' });
+
+    expect(salvo.cabelo).toBe('loiro');
+  });
+
+  it.each([
+    ['TITULO', 'titulo-mestre'],
+    ['CALCADO', 'calcado-inexistente'],
+    ['CABELO', 'bota-coturno'],
+  ])('devolve null para %s %s', (tipo, codigo) => {
+    expect(aplicarItemNaAparencia(salvo, { tipo, codigo })).toBeNull();
   });
 });

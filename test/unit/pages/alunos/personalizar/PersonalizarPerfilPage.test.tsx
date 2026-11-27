@@ -51,10 +51,10 @@ type MockZustandState = {
 const ITEM_CORUJA = {
   inventarioId: 'inventario-1',
   id: 'item-1',
-  codigo: 'coruja',
-  nome: 'Coruja',
+  codigo: 'moldura-bronze',
+  nome: 'Bronze',
   descricao: null,
-  tipo: 'ICONE_PERFIL',
+  tipo: 'MOLDURA',
   precoMoedas: 0,
   valor: '#14b8a6',
   imagemUrl: null,
@@ -66,10 +66,10 @@ const ITEM_CORUJA = {
 const ITEM_CEREBRO = {
   inventarioId: 'inventario-2',
   id: 'item-2',
-  codigo: 'cerebro',
-  nome: 'Cérebro',
+  codigo: 'moldura-prateada',
+  nome: 'Prateada',
   descricao: null,
-  tipo: 'ICONE_PERFIL',
+  tipo: 'MOLDURA',
   precoMoedas: 0,
   valor: '#00214d',
   imagemUrl: null,
@@ -91,13 +91,13 @@ const ITEM_CORUJA_EQUIPADO = {
   ativo: ITEM_CORUJA.ativo,
 };
 
-const ITEM_ROSTO = {
+const ITEM_TITULO = {
   inventarioId: 'inventario-3',
-  id: 'item-rosto-1',
-  codigo: 'rosto-padrao',
-  nome: 'Rosto Padrão',
+  id: 'item-titulo-1',
+  codigo: 'titulo-calouro-curioso',
+  nome: 'Calouro Curioso',
   descricao: null,
-  tipo: 'ROSTO',
+  tipo: 'TITULO',
   precoMoedas: 0,
   valor: null,
   imagemUrl: null,
@@ -107,13 +107,13 @@ const ITEM_ROSTO = {
   origem: 'COMPRA',
 };
 // So existe no catalogo (nao esta no inventario) — usado para testar o bloqueio.
-const ITEM_CABELO_BLOQUEADO = {
+const ITEM_TITULO_BLOQUEADO = {
   inventarioId: 'nao-possuido',
-  id: 'item-cabelo-1',
-  codigo: 'cabelo-moicano',
-  nome: 'Moicano Colorido',
+  id: 'item-titulo-2',
+  codigo: 'titulo-mestre-anatomia',
+  nome: 'Mestre da Anatomia',
   descricao: null,
-  tipo: 'CABELO',
+  tipo: 'TITULO',
   precoMoedas: 250,
   valor: null,
   imagemUrl: null,
@@ -167,7 +167,7 @@ describe('PersonalizarPerfilPage', () => {
     mockedUseEquippedCosmeticsStore.mockImplementation((selector: unknown) => {
       const state: MockZustandState = {
         cosmeticos: {
-          ICONE_PERFIL: ITEM_CORUJA_EQUIPADO,
+          MOLDURA: ITEM_CORUJA_EQUIPADO,
         },
         setCosmeticos: mockSetCosmeticosGlobais,
       };
@@ -191,8 +191,8 @@ describe('PersonalizarPerfilPage', () => {
     expect(screen.getByText('Personalizar avatar')).toBeInTheDocument();
     
     await waitFor(() => {
-      expect(screen.getByText('Coruja')).toBeInTheDocument();
-      expect(screen.getByText('Cérebro')).toBeInTheDocument();
+      expect(screen.getByText('Bronze')).toBeInTheDocument();
+      expect(screen.getByText('Prateada')).toBeInTheDocument();
     });
 
     expect(screen.getAllByText('Equipado')).toHaveLength(1);
@@ -209,11 +209,11 @@ describe('PersonalizarPerfilPage', () => {
 
     renderWithProviders(<PersonalizarPerfilPage />);
 
-    await waitFor(() => expect(screen.getByText('Cérebro')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Prateada')).toBeInTheDocument());
 
     expect(screen.queryByText('Você tem alterações não salvas')).not.toBeInTheDocument();
 
-    const cerebroText = screen.getByText('Cérebro');
+    const cerebroText = screen.getByText('Prateada');
     fireEvent.click(cerebroText);
 
     expect(await screen.findByText('Você tem alterações não salvas')).toBeInTheDocument();
@@ -233,9 +233,9 @@ describe('PersonalizarPerfilPage', () => {
     mockedHttpClient.patch.mockResolvedValueOnce(mockPatchResponse as AxiosResponse);
 
     renderWithProviders(<PersonalizarPerfilPage />);
-    await waitFor(() => expect(screen.getByText('Cérebro')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Prateada')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText('Cérebro'));
+    fireEvent.click(screen.getByText('Prateada'));
     
     const saveBtn = await screen.findByRole('button', { name: /Salvar alterações/i });
     fireEvent.click(saveBtn);
@@ -257,7 +257,7 @@ describe('PersonalizarPerfilPage', () => {
     mockedHttpClient.patch.mockResolvedValueOnce({ status: 200 } as AxiosResponse);
 
     renderWithProviders(<PersonalizarPerfilPage />);
-    await waitFor(() => expect(screen.getByText('Coruja')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Bronze')).toBeInTheDocument());
 
     // Remove o item equipado escolhendo "Nenhum (padrão)".
     fireEvent.click(screen.getByText('Nenhum (padrão)'));
@@ -272,35 +272,34 @@ describe('PersonalizarPerfilPage', () => {
     expect(mockSetCosmeticosGlobais).toHaveBeenCalled();
   });
 
-  it('deve mostrar a aba Aparência com os grupos de Rosto e Cabelo', async () => {
-    const mockResponse: Partial<AxiosResponse> = { data: { dados: [ITEM_ROSTO] } };
-    mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
-    mockedHttpClient.get.mockResolvedValueOnce(
-      catalogoDe(ITEM_ROSTO, ITEM_CABELO_BLOQUEADO) as AxiosResponse,
-    );
+  it('mostra só as abas Molduras, Títulos e Fundos, abrindo em Molduras', async () => {
+    mockedHttpClient.get.mockResolvedValueOnce({ data: { dados: [ITEM_CORUJA] } } as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce(catalogoDe(ITEM_CORUJA) as AxiosResponse);
 
     renderWithProviders(<PersonalizarPerfilPage />);
-    await waitFor(() => expect(screen.getByText('Aparência')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Bronze')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText('Aparência'));
-
-    expect(await screen.findByText('Rosto')).toBeInTheDocument();
-    expect(screen.getByText('Cabelo')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Molduras' })).toBeInTheDocument();
+    expect(screen.getByText('Títulos')).toBeInTheDocument();
+    expect(screen.getByText('Fundos')).toBeInTheDocument();
+    for (const removida of ['Ícones', 'Avatares', 'Aparência']) {
+      expect(screen.queryByText(removida)).not.toBeInTheDocument();
+    }
   });
 
   it('deve bloquear item nao adquirido e navegar para a loja em vez de equipar', async () => {
-    const mockResponse: Partial<AxiosResponse> = { data: { dados: [ITEM_ROSTO] } };
+    const mockResponse: Partial<AxiosResponse> = { data: { dados: [ITEM_TITULO] } };
     mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
     mockedHttpClient.get.mockResolvedValueOnce(
-      catalogoDe(ITEM_ROSTO, ITEM_CABELO_BLOQUEADO) as AxiosResponse,
+      catalogoDe(ITEM_TITULO, ITEM_TITULO_BLOQUEADO) as AxiosResponse,
     );
 
     renderWithProviders(<PersonalizarPerfilPage />);
-    await waitFor(() => expect(screen.getByText('Aparência')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Títulos')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText('Aparência'));
+    fireEvent.click(screen.getByText('Títulos'));
 
-    const nomeBloqueado = await screen.findByText(ITEM_CABELO_BLOQUEADO.nome);
+    const [nomeBloqueado] = await screen.findAllByText(ITEM_TITULO_BLOQUEADO.nome);
     expect(screen.getByText('Adquira na loja')).toBeInTheDocument();
 
     fireEvent.click(nomeBloqueado);
@@ -309,26 +308,26 @@ describe('PersonalizarPerfilPage', () => {
     expect(mockedHttpClient.patch).not.toHaveBeenCalled();
   });
 
-  it('deve equipar um item de ROSTO possuído ao salvar', async () => {
-    const mockResponse: Partial<AxiosResponse> = { data: { dados: [ITEM_ROSTO] } };
+  it('deve equipar um título possuído ao salvar', async () => {
+    const mockResponse: Partial<AxiosResponse> = { data: { dados: [ITEM_TITULO] } };
     mockedHttpClient.get.mockResolvedValueOnce(mockResponse as AxiosResponse);
     mockedHttpClient.get.mockResolvedValueOnce(
-      catalogoDe(ITEM_ROSTO, ITEM_CABELO_BLOQUEADO) as AxiosResponse,
+      catalogoDe(ITEM_TITULO, ITEM_TITULO_BLOQUEADO) as AxiosResponse,
     );
     mockedHttpClient.patch.mockResolvedValueOnce({ status: 200 } as AxiosResponse);
 
     renderWithProviders(<PersonalizarPerfilPage />);
-    await waitFor(() => expect(screen.getByText('Aparência')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Títulos')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText('Aparência'));
-    fireEvent.click(await screen.findByText(ITEM_ROSTO.nome));
+    fireEvent.click(screen.getByText('Títulos'));
+    fireEvent.click((await screen.findAllByText(ITEM_TITULO.nome))[0]);
 
     const saveBtn = await screen.findByRole('button', { name: /Salvar alterações/i });
     fireEvent.click(saveBtn);
 
     expect(await screen.findByText('Sucesso!')).toBeInTheDocument();
     expect(mockedHttpClient.patch).toHaveBeenCalledWith('/inventario/equipar', {
-      itemLojaId: ITEM_ROSTO.id,
+      itemLojaId: ITEM_TITULO.id,
     });
   });
 
@@ -343,5 +342,30 @@ describe('PersonalizarPerfilPage', () => {
     fireEvent.click(shopBtn[0]);
 
     expect(mockNavigate).toHaveBeenCalledWith('/aluno/loja');
+  });
+
+  it('mostra a prévia do item bloqueado sem imagem quebrada (moldura e fundo usam o valor)', async () => {
+    const molduraBloqueada = { ...ITEM_CEREBRO, id: 'moldura-dourada', nome: 'Dourada', valor: '#FCD34D' };
+    const fundoBloqueado = {
+      ...ITEM_CEREBRO,
+      id: 'fundo-azul',
+      codigo: 'fundo-azul-noturno',
+      nome: 'Azul Noturno',
+      tipo: 'PLANO_FUNDO',
+      valor: '#0A1128',
+    };
+    mockedHttpClient.get.mockResolvedValueOnce({ data: { dados: [] } } as AxiosResponse);
+    mockedHttpClient.get.mockResolvedValueOnce(catalogoDe(molduraBloqueada, fundoBloqueado) as AxiosResponse);
+
+    renderWithProviders(<PersonalizarPerfilPage />);
+    const cartaoMoldura = (await screen.findByText('Dourada')).closest('button')!;
+
+    expect(cartaoMoldura.querySelector('img')).toBeNull();
+    expect(cartaoMoldura.querySelector('[style*="background"]')).toHaveStyle({ background: '#FCD34D' });
+
+    fireEvent.click(screen.getByText('Fundos'));
+    const cartaoFundo = (await screen.findByText('Azul Noturno')).closest('button')!;
+    expect(cartaoFundo.querySelector('img')).toBeNull();
+    expect(cartaoFundo.querySelector('[style*="background"]')).toHaveStyle({ background: '#0A1128' });
   });
 });

@@ -2,12 +2,35 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pencil, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../../app/providers/AuthProvider';
+import {
+  buscarInventarioCompleto,
+  listarCatalogo,
+  type InventarioItem,
+  type ItemLoja,
+} from '../../../features/loja';
+import { useEquippedCosmeticsStore } from '../../../features/profile-cosmetics';
 import { AvatarCerebro } from '../../../shared/avatar/AvatarCerebro';
 import { buscarAparenciaRemota, salvarAparenciaRemota } from '../../../shared/avatar/avatarApi';
 import { carregarAparencia, salvarAparencia as persistirAparencia } from '../../../shared/avatar/useAparenciaAvatar';
 import { AparenciaPanel } from './AparenciaPanel';
 import { APARENCIA_PADRAO, type AparenciaAvatar } from './aparencia';
 import '../perfil/ui/profile.css';
+
+const TIPOS_ITEM_AVATAR = new Set(['CABELO', 'ACESSORIO', 'LUVA', 'CALCADO']);
+
+/** Busca todas as paginas do catalogo e fica so com os itens de avatar. */
+const buscarItensAvatarDaLoja = async (): Promise<ItemLoja[]> => {
+  const itens: ItemLoja[] = [];
+  let pagina = 1;
+  let totalPaginas: number;
+  do {
+    const resposta = await listarCatalogo({ page: pagina, limit: 100 });
+    itens.push(...resposta.dados);
+    totalPaginas = resposta.metadados.totalPages;
+    pagina += 1;
+  } while (pagina <= totalPaginas);
+  return itens.filter((item) => TIPOS_ITEM_AVATAR.has(item.tipo));
+};
 
 /** Primeira etapa do avatar: apresentação do cérebro padrão + personalização de aparência. */
 export function AvatarPage() {
@@ -18,6 +41,10 @@ export function AvatarPage() {
   const [rascunho, setRascunho] = useState<AparenciaAvatar>(APARENCIA_PADRAO);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [itensComprados, setItensComprados] = useState<InventarioItem[]>([]);
+  const [itensLoja, setItensLoja] = useState<ItemLoja[]>([]);
+  // Plano de fundo equipado: aparece atras do avatar, dentro do circulo.
+  const fundo = useEquippedCosmeticsStore((state) => state.cosmeticos.PLANO_FUNDO?.valor);
   const userId = user?.id;
 
   // Carrega a aparencia salva assim que o usuario autenticado fica disponivel.
@@ -46,6 +73,21 @@ export function AvatarPage() {
     }).finally(() => {
       if (ativo) setCarregando(false);
     });
+    return () => { ativo = false; };
+  }, [userId]);
+
+  // Itens comprados na loja (cabelo, acessorio, luva, calcado) entram nas grades do editor.
+  // Se o inventario falhar, o editor continua com os itens base.
+  useEffect(() => {
+    if (!userId) return;
+    let ativo = true;
+    void buscarInventarioCompleto()
+      .then((itens) => { if (ativo) setItensComprados(itens); })
+      .catch(() => {});
+    // Catalogo: os itens de avatar ainda nao comprados aparecem bloqueados no editor.
+    void buscarItensAvatarDaLoja()
+      .then((itens) => { if (ativo) setItensLoja(itens); })
+      .catch(() => {});
     return () => { ativo = false; };
   }, [userId]);
 
@@ -123,7 +165,7 @@ export function AvatarPage() {
             </div>
             <div className="avatar-only-circle">
               <div className="avatar-only-shadow" />
-              <AvatarCerebro aparencia={rascunho} className="h-full w-full" />
+              <AvatarCerebro aparencia={rascunho} className="h-full w-full" fundo={fundo} />
             </div>
             <button className="avatar-only-restore" type="button" onClick={() => void restore()} disabled={carregando || salvando}>
               <RotateCcw size={22} aria-hidden="true" />
@@ -140,6 +182,8 @@ export function AvatarPage() {
               aoSalvar={() => void salvarAparencia()}
               aoCancelar={cancelarAparencia}
               temAlteracoes={temAlteracoes && !salvando}
+              itensComprados={itensComprados}
+              itensLoja={itensLoja}
             />
           </div>
         )}

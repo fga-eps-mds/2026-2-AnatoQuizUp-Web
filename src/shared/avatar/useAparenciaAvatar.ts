@@ -20,7 +20,7 @@ const normalizarCorCerebro = (valor: unknown): AparenciaAvatar['corCerebro'] => 
   }
 };
 
-const normalizarCabelo = (valor: unknown): AparenciaAvatar['cabelo'] => {
+export const normalizarCabelo = (valor: unknown): AparenciaAvatar['cabelo'] => {
   switch (valor) {
     case 'loiro': return 'loiro';
     case 'cacheado': return 'cacheado';
@@ -39,7 +39,7 @@ const normalizarCabelo = (valor: unknown): AparenciaAvatar['cabelo'] => {
   }
 };
 
-const normalizarAcessorio = (valor: unknown): AparenciaAvatar['acessorio'] => {
+export const normalizarAcessorio = (valor: unknown): AparenciaAvatar['acessorio'] => {
   switch (valor) {
     case 'coroa': return 'coroa';
     case 'oculos': return 'oculos';
@@ -58,7 +58,7 @@ const normalizarAcessorio = (valor: unknown): AparenciaAvatar['acessorio'] => {
   }
 };
 
-const normalizarLuva = (valor: unknown): AparenciaAvatar['luva'] => {
+export const normalizarLuva = (valor: unknown): AparenciaAvatar['luva'] => {
   switch (valor) {
     case 'luva-boxe': return 'luva-boxe';
     case 'luva-cirurgica': return 'luva-cirurgica';
@@ -77,7 +77,7 @@ const normalizarLuva = (valor: unknown): AparenciaAvatar['luva'] => {
   }
 };
 
-const normalizarCalcado = (valor: unknown): AparenciaAvatar['calcado'] => {
+export const normalizarCalcado = (valor: unknown): AparenciaAvatar['calcado'] => {
   switch (valor) {
     case 'sapato-plantao': return 'sapato-plantao';
     case 'tenis-cano-alto': return 'tenis-cano-alto';
@@ -93,6 +93,37 @@ const normalizarCalcado = (valor: unknown): AparenciaAvatar['calcado'] => {
     case 'tenis-skate': return 'tenis-skate';
     case 'bota-coturno': return 'bota-coturno';
     default: return null;
+  }
+};
+
+/**
+ * Aparencia com um item da loja aplicado no slot do seu tipo, para pre-visualizar.
+ * Devolve null quando o item nao e de avatar ou o avatar nao sabe desenha-lo.
+ * Nao grava nada: a aparencia salva continua a mesma.
+ */
+export const aplicarItemNaAparencia = (
+  aparencia: AparenciaAvatar,
+  item: { tipo: string; codigo: string },
+): AparenciaAvatar | null => {
+  switch (item.tipo) {
+    case 'CABELO': {
+      const cabelo = normalizarCabelo(item.codigo);
+      return cabelo ? { ...aparencia, cabelo } : null;
+    }
+    case 'ACESSORIO': {
+      const acessorio = normalizarAcessorio(item.codigo);
+      return acessorio ? { ...aparencia, acessorio } : null;
+    }
+    case 'LUVA': {
+      const luva = normalizarLuva(item.codigo);
+      return luva ? { ...aparencia, luva } : null;
+    }
+    case 'CALCADO': {
+      const calcado = normalizarCalcado(item.codigo);
+      return calcado ? { ...aparencia, calcado } : null;
+    }
+    default:
+      return null;
   }
 };
 

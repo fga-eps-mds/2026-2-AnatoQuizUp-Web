@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check, Lock, X } from 'lucide-react';
 import cabeloLoiro from '../../../shared/assets/avatar/cabelo/cabelo-loiro.png';
 import cabeloCacheado from '../../../shared/assets/avatar/cabelo/cabelo-cacheado.png';
 import cabeloMoicano from '../../../shared/assets/avatar/cabelo/cabelo-moicano.png';
@@ -26,6 +27,13 @@ import type {
   EstiloCalcado,
   EstiloLuva,
 } from './aparencia';
+import type { InventarioItem, ItemLoja, TipoItemLoja } from '../../../features/loja';
+import {
+  normalizarAcessorio,
+  normalizarCabelo,
+  normalizarCalcado,
+  normalizarLuva,
+} from '../../../shared/avatar/useAparenciaAvatar';
 
 // Personalizacao de aparencia do avatar-cerebro: cor do cerebro, cabelo, acessorios de
 // cabeca + luvas (aba Acessorios) e calcados (aba Calcados). Base liberada com itens
@@ -71,6 +79,61 @@ const CALCADOS: { id: EstiloCalcado; label: string; imagem: string; posicao: str
   { id: 'tenis-cano-alto', label: 'Tênis cano alto', imagem: calcadoTenisCanoAltoIcone, posicao: calcadoTenisCanoAltoPosicao },
   { id: 'tenis-esportivo', label: 'Tênis esportivo', imagem: calcadoTenisEsportivoIcone, posicao: calcadoTenisEsportivoPosicao },
 ];
+
+type OpcaoGrade<T> = { id: T; label: string; imagem: string; bloqueado?: boolean };
+
+/**
+ * Monta as opcoes de uma grade: primeiro os itens base (liberados), depois os itens
+ * daquele tipo que o aluno comprou e, por fim, os itens do catalogo que ele ainda nao
+ * comprou (bloqueados). O `codigo` do item no catalogo e o mesmo id usado no avatar;
+ * codigos que o avatar nao sabe desenhar sao ignorados e nada aparece duplicado.
+ */
+const montarOpcoes = <T extends string>(
+  base: OpcaoGrade<T>[],
+  comprados: InventarioItem[],
+  catalogo: ItemLoja[],
+  tipo: TipoItemLoja,
+  normalizar: (valor: unknown) => T | null,
+): OpcaoGrade<T>[] => {
+  const opcoes: OpcaoGrade<T>[] = [...base];
+  const adicionar = (item: { codigo: string; nome: string; imagemUrl: string | null; previewImagemUrl: string | null }, bloqueado: boolean) => {
+    const id = normalizar(item.codigo);
+    if (!id || opcoes.some((opcao) => opcao.id === id)) return;
+    const imagem = item.previewImagemUrl ?? item.imagemUrl;
+    if (imagem) opcoes.push({ id, label: item.nome, imagem, ...(bloqueado ? { bloqueado } : {}) });
+  };
+  for (const { item } of comprados) if (item.tipo === tipo) adicionar(item, false);
+  for (const item of catalogo) if (item.tipo === tipo && !item.adquirido) adicionar(item, true);
+  return opcoes;
+};
+
+/** Botao de uma opcao da grade; itens nao comprados aparecem esmaecidos, com cadeado. */
+const OpcaoItem = <T extends string>({
+  opcao,
+  selecionado,
+  aoEscolher,
+}: {
+  opcao: OpcaoGrade<T>;
+  selecionado: boolean;
+  aoEscolher: () => void;
+}) => (
+  <button
+    type="button"
+    aria-label={opcao.bloqueado ? `${opcao.label} (adquira na loja)` : opcao.label}
+    aria-pressed={selecionado}
+    aria-disabled={opcao.bloqueado ? true : undefined}
+    title={opcao.bloqueado ? 'Adquira na loja' : undefined}
+    className={`avatar-cabelo-opcao${selecionado ? ' selecionado' : ''}${opcao.bloqueado ? ' bloqueado' : ''}`}
+    onClick={aoEscolher}
+  >
+    <img src={opcao.imagem} alt="" aria-hidden="true" style={{ width: 32, height: 'auto' }} />
+    {opcao.bloqueado && (
+      <span className="avatar-opcao-cadeado" aria-hidden="true">
+        <Lock size={12} />
+      </span>
+    )}
+  </button>
+);
 
 /** Miniatura do acessorio, usada na grade e no overlay do preview (ver HairThumb). */
 export const AccessoryThumb = ({ estilo, size }: { estilo: EstiloAcessorio; size?: number }) => {
@@ -128,6 +191,10 @@ type AparenciaPanelProps = {
   aoSalvar: () => void;
   aoCancelar: () => void;
   temAlteracoes: boolean;
+  /** Inventario do aluno: os cosmeticos de avatar comprados entram nas grades. */
+  itensComprados?: InventarioItem[];
+  /** Catalogo da loja: os itens de avatar ainda nao comprados aparecem bloqueados. */
+  itensLoja?: ItemLoja[];
 };
 
 type AbaPersonalizacao = 'aparencia' | 'calcados' | 'acessorios';
@@ -139,8 +206,25 @@ export const AparenciaPanel = ({
   aoSalvar,
   aoCancelar,
   temAlteracoes,
+  itensComprados = [],
+  itensLoja = [],
 }: AparenciaPanelProps) => {
   const [aba, setAba] = useState<AbaPersonalizacao>('aparencia');
+  // Item bloqueado clicado: nao e equipado, so explica que ele esta na loja.
+  const [itemNaLoja, setItemNaLoja] = useState<string | null>(null);
+
+  const escolher = <T extends string>(opcao: OpcaoGrade<T>, aplicar: () => void) => () => {
+    if (opcao.bloqueado) {
+      setItemNaLoja(opcao.label);
+      return;
+    }
+    setItemNaLoja(null);
+    aplicar();
+  };
+  const cabelos = montarOpcoes(CABELOS, itensComprados, itensLoja, 'CABELO', normalizarCabelo);
+  const acessorios = montarOpcoes(ACESSORIOS, itensComprados, itensLoja, 'ACESSORIO', normalizarAcessorio);
+  const luvas = montarOpcoes(LUVAS, itensComprados, itensLoja, 'LUVA', normalizarLuva);
+  const calcados = montarOpcoes(CALCADOS, itensComprados, itensLoja, 'CALCADO', normalizarCalcado);
 
   return (
     <section className="avatar-personalizar-card" aria-label="Personalizar avatar">
@@ -174,6 +258,16 @@ export const AparenciaPanel = ({
         </button>
       </div>
 
+      {itemNaLoja && (
+        <p className="avatar-aviso-loja" role="status">
+          <Lock size={14} aria-hidden="true" />
+          <span>
+            <strong>{itemNaLoja}</strong> ainda não é seu. Ele está disponível na{' '}
+            <Link to="/aluno/loja">Loja</Link>.
+          </span>
+        </p>
+      )}
+
       {aba === 'acessorios' ? (
         <div className="avatar-aparencia-conteudo">
           <div className="avatar-secao">
@@ -188,17 +282,13 @@ export const AparenciaPanel = ({
               >
                 <X size={20} aria-hidden="true" />
               </button>
-              {ACESSORIOS.map((acessorio) => (
-                <button
-                  key={acessorio.id}
-                  type="button"
-                  aria-label={acessorio.label}
-                  aria-pressed={valor.acessorio === acessorio.id}
-                  className={`avatar-cabelo-opcao${valor.acessorio === acessorio.id ? ' selecionado' : ''}`}
-                  onClick={() => aoMudar({ ...valor, acessorio: acessorio.id })}
-                >
-                  <AccessoryThumb estilo={acessorio.id} size={32} />
-                </button>
+              {acessorios.map((opcao) => (
+                <OpcaoItem
+                  key={opcao.id}
+                  opcao={opcao}
+                  selecionado={valor.acessorio === opcao.id}
+                  aoEscolher={escolher(opcao, () => aoMudar({ ...valor, acessorio: opcao.id }))}
+                />
               ))}
             </div>
           </div>
@@ -217,17 +307,13 @@ export const AparenciaPanel = ({
               >
                 <X size={20} aria-hidden="true" />
               </button>
-              {LUVAS.map((luva) => (
-                <button
-                  key={luva.id}
-                  type="button"
-                  aria-label={luva.label}
-                  aria-pressed={valor.luva === luva.id}
-                  className={`avatar-cabelo-opcao${valor.luva === luva.id ? ' selecionado' : ''}`}
-                  onClick={() => aoMudar({ ...valor, luva: luva.id })}
-                >
-                  <img src={luva.imagem} alt="" aria-hidden="true" style={{ width: 32, height: 'auto' }} />
-                </button>
+              {luvas.map((opcao) => (
+                <OpcaoItem
+                  key={opcao.id}
+                  opcao={opcao}
+                  selecionado={valor.luva === opcao.id}
+                  aoEscolher={escolher(opcao, () => aoMudar({ ...valor, luva: opcao.id }))}
+                />
               ))}
             </div>
           </div>
@@ -263,17 +349,13 @@ export const AparenciaPanel = ({
               >
                 <X size={20} aria-hidden="true" />
               </button>
-              {CABELOS.map((estilo) => (
-                <button
-                  key={estilo.id}
-                  type="button"
-                  aria-label={estilo.label}
-                  aria-pressed={valor.cabelo === estilo.id}
-                  className={`avatar-cabelo-opcao${valor.cabelo === estilo.id ? ' selecionado' : ''}`}
-                  onClick={() => aoMudar({ ...valor, cabelo: estilo.id })}
-                >
-                  <HairThumb estilo={estilo.id} size={32} />
-                </button>
+              {cabelos.map((opcao) => (
+                <OpcaoItem
+                  key={opcao.id}
+                  opcao={opcao}
+                  selecionado={valor.cabelo === opcao.id}
+                  aoEscolher={escolher(opcao, () => aoMudar({ ...valor, cabelo: opcao.id }))}
+                />
               ))}
             </div>
           </div>
@@ -291,17 +373,13 @@ export const AparenciaPanel = ({
             >
               <X size={20} aria-hidden="true" />
             </button>
-            {CALCADOS.map((calcado) => (
-              <button
-                key={calcado.id}
-                type="button"
-                aria-label={calcado.label}
-                aria-pressed={valor.calcado === calcado.id}
-                className={`avatar-cabelo-opcao${valor.calcado === calcado.id ? ' selecionado' : ''}`}
-                onClick={() => aoMudar({ ...valor, calcado: calcado.id })}
-              >
-                <img src={calcado.imagem} alt="" aria-hidden="true" style={{ width: 32, height: 'auto' }} />
-              </button>
+            {calcados.map((opcao) => (
+              <OpcaoItem
+                key={opcao.id}
+                opcao={opcao}
+                selecionado={valor.calcado === opcao.id}
+                aoEscolher={escolher(opcao, () => aoMudar({ ...valor, calcado: opcao.id }))}
+              />
             ))}
           </div>
         </div>

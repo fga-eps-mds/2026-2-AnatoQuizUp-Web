@@ -1,5 +1,5 @@
 // Pagina de personalizacao do perfil do aluno. Mostra o inventario de cosmeticos
-// (icones, molduras, avatares, aparencia, titulos e fundos) por aba, permite montar
+// (molduras, titulos e fundos) por aba, permite montar
 // uma previa em tempo real e salvar as alteracoes equipando/desequipando cada slot.
 // As mudancas ficam "em rascunho" (staged) ate o aluno confirmar o salvamento.
 import { useEffect, useState, useMemo } from 'react';
@@ -22,32 +22,15 @@ import {
   type TipoItemLoja,
 } from '../../../../features/loja';
 
-// Abas de personalizacao. Cada aba agrupa um ou mais tipos de cosmetico (ex.:
-// "Aparência" combina ROSTO + CABELO), com rotulo e explicacao.
+// Abas de personalizacao, com rotulo e explicacao. Icones, avatares ilustrados e a
+// aparencia antiga (rosto/cabelo) sairam na US39: o avatar-cerebro e montado no
+// editor de avatar (cabelo, acessorio, luva e calcado).
 const ABAS: { id: string; tipos: TipoItemLoja[]; label: string; descricao: string }[] = [
-  {
-    id: 'ICONE_PERFIL',
-    tipos: ['ICONE_PERFIL'],
-    label: 'Ícones',
-    descricao: 'Selecione um ícone que você já tem — ele aparece no seu avatar.',
-  },
   {
     id: 'MOLDURA',
     tipos: ['MOLDURA'],
     label: 'Molduras',
-    descricao: 'A moldura é aplicada ao redor do seu ícone de perfil.',
-  },
-  {
-    id: 'AVATAR',
-    tipos: ['AVATAR'],
-    label: 'Avatares',
-    descricao: 'Personagem ilustrado exibido na sua página de perfil.',
-  },
-  {
-    id: 'APARENCIA',
-    tipos: ['ROSTO', 'CABELO'],
-    label: 'Aparência',
-    descricao: 'Combine rosto e cabelo para montar sua aparência.',
+    descricao: 'A moldura é aplicada ao redor do seu avatar.',
   },
   {
     id: 'TITULO',
@@ -59,14 +42,9 @@ const ABAS: { id: string; tipos: TipoItemLoja[]; label: string; descricao: strin
     id: 'PLANO_FUNDO',
     tipos: ['PLANO_FUNDO'],
     label: 'Fundos',
-    descricao: 'Aplicado ao topo da sua página de perfil.',
+    descricao: 'Aparece atrás do seu avatar.',
   },
 ];
-
-const LABEL_TIPO: Partial<Record<TipoItemLoja, string>> = {
-  ROSTO: 'Rosto',
-  CABELO: 'Cabelo',
-};
 
 /** Previa visual de um item ja possuido, especifica por tipo de cosmetico. */
 const PreviaItem = ({ tipo, item }: { tipo: TipoItemLoja; item: ItemInventario }) => {
@@ -100,26 +78,7 @@ const PreviaItem = ({ tipo, item }: { tipo: TipoItemLoja; item: ItemInventario }
     );
   }
 
-  if (tipo === 'ICONE_PERFIL') {
-    return (
-      <div
-        className="flex h-20 w-20 items-center justify-center rounded-2xl p-4 shadow-inner"
-        style={{ background: item.valor || '#0A1128' }}
-      >
-        {item.previewImagemUrl || item.imagemUrl ? (
-          <img
-            src={item.previewImagemUrl || item.imagemUrl || undefined}
-            alt={item.nome}
-            className="h-full w-full object-contain drop-shadow-sm"
-          />
-        ) : (
-          <span className="text-3xl font-black text-white uppercase">{item.nome.charAt(0)}</span>
-        )}
-      </div>
-    );
-  }
-
-  // AVATAR, ROSTO e CABELO: imagem completa (mesmo formato de miniatura).
+  // Demais tipos: imagem completa (mesmo formato de miniatura).
   return (
     <img
       src={item.previewImagemUrl || item.imagemUrl || undefined}
@@ -202,12 +161,10 @@ const GradeDoTipo = ({
               onClick={onIrParaLoja}
               className="relative flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-4 opacity-70 transition-all hover:border-[#F97316]"
             >
-              <div className="flex h-24 w-full items-center justify-center">
-                <img
-                  src={itemCatalogo.previewImagemUrl || itemCatalogo.imagemUrl || undefined}
-                  alt={itemCatalogo.nome}
-                  className="h-20 w-20 rounded-2xl object-contain grayscale"
-                />
+              {/* Mesma previa dos itens possuidos (molduras, titulos e fundos sao
+                  desenhados a partir do `valor`, sem imagem), em tons de cinza. */}
+              <div className="flex h-24 w-full items-center justify-center grayscale">
+                <PreviaItem tipo={tipo} item={itemCatalogo} />
               </div>
               <div className="flex flex-col items-center">
                 <span className="text-center text-sm font-black leading-tight text-gray-400">
@@ -287,7 +244,7 @@ export const PersonalizarPerfilPage = () => {
   const [inventario, setInventario] = useState<InventarioItem[]>([]);
   const [catalogo, setCatalogo] = useState<ItemLoja[]>([]);
   const [carregando, setCarregando] = useState(true);
-  const [abaAtiva, setAbaAtiva] = useState<string>('ICONE_PERFIL');
+  const [abaAtiva, setAbaAtiva] = useState<string>('MOLDURA');
 
   // Selecao em rascunho (ainda nao persistida) e flags de salvamento/sucesso.
   const [stagedCosmetics, setStagedCosmetics] = useState<SlotsCosmeticos>({});
@@ -345,17 +302,11 @@ export const PersonalizarPerfilPage = () => {
   const irParaLoja = () => navigate('/aluno/loja');
 
   /**
-   * Seleciona um cosmetico para o slot do seu tipo. Avatar e icone de perfil
-   * sao mutuamente exclusivos, entao um substitui o outro no rascunho.
+   * Seleciona um cosmetico para o slot do seu tipo.
    * @param item item do inventario escolhido
    */
   const handleSelectCosmetic = (item: ItemInventario) => {
-    setStagedCosmetics((prev) => {
-      const novoStage = { ...prev, [item.tipo]: item };
-      if (item.tipo === 'AVATAR') delete novoStage.ICONE_PERFIL;
-      if (item.tipo === 'ICONE_PERFIL') delete novoStage.AVATAR;
-      return novoStage;
-    });
+    setStagedCosmetics((prev) => ({ ...prev, [item.tipo]: item }));
   };
 
   // Remove o cosmetico de um slot no rascunho (volta ao padrao "Nenhum").
@@ -380,15 +331,7 @@ export const PersonalizarPerfilPage = () => {
   const salvarAlteracoes = async () => {
     setSalvando(true);
     try {
-      const tipos: TipoItemLoja[] = [
-        'ICONE_PERFIL',
-        'MOLDURA',
-        'AVATAR',
-        'ROSTO',
-        'CABELO',
-        'TITULO',
-        'PLANO_FUNDO',
-      ];
+      const tipos: TipoItemLoja[] = ['MOLDURA', 'TITULO', 'PLANO_FUNDO'];
 
       const operacoes = tipos.map(async (tipo) => {
         const original = cosmeticosEquipados[tipo];
@@ -519,11 +462,6 @@ export const PersonalizarPerfilPage = () => {
                 <div className="flex flex-col gap-6">
                   {abaInfo.tipos.map((tipo) => (
                     <div key={tipo} className="flex flex-col gap-3">
-                      {abaInfo.tipos.length > 1 && (
-                        <h3 className="text-sm font-black uppercase tracking-wide text-gray-400">
-                          {LABEL_TIPO[tipo] ?? tipo}
-                        </h3>
-                      )}
                       <GradeDoTipo
                         tipo={tipo}
                         itensCatalogo={catalogo}

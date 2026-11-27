@@ -10,6 +10,15 @@ import {
 import { LojaPage } from '../../../../../../src/pages/aluno/loja/ui/LojaPage';
 import { useStudentCoinsStore } from '../../../../../../src/features/student-coins/model/useStudentCoinsStore';
 
+jest.mock('../../../../../../src/app/providers/AuthProvider', () => ({
+  useAuth: () => ({ user: { id: 'aluno-1' } }),
+}));
+
+jest.mock('../../../../../../src/shared/avatar/avatarApi', () => ({
+  buscarAparenciaRemota: jest.fn(() => new Promise(() => {})),
+  salvarAparenciaRemota: jest.fn(),
+}));
+
 jest.mock('../../../../../../src/features/loja', () => ({
   listarCatalogo: jest.fn(),
   listarInventario: jest.fn(),

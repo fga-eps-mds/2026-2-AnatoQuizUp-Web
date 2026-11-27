@@ -1,5 +1,5 @@
 // Pagina da Loja Virtual do aluno. Lista o catalogo (itens consumiveis — dicas e
-// potencializadores — e cosmeticos: icones, molduras, avatares, titulos e fundos)
+// potencializadores — e cosmeticos: molduras, titulos, fundos e itens do avatar)
 // e o inventario ja adquirido, permitindo filtrar por categoria, ordenar por
 // preco e comprar itens com as moedas ATP do aluno. Toda compra passa pelo modal
 // de confirmacao, e o resultado (sucesso ou saldo insuficiente) aparece em outro modal.
@@ -12,16 +12,18 @@ import {
   BadgeCheck,
   Check,
   Coins,
+  Crown,
+  Footprints,
   Frame,
+  Hand,
   History,
   LayoutGrid,
   Lock,
   Palette,
+  Scissors,
   ShoppingBag,
-  Smile,
   Lightbulb,
   Sparkles,
-  UserRound,
   X,
   Zap,
 } from "lucide-react";
@@ -39,13 +41,16 @@ import type {
   ItemLoja,
   TipoItemLoja,
 } from "../../../../features/loja";
+import { useAuth } from "../../../../app/providers/AuthProvider";
 import { ModalConfirmarCompra } from "../../../../features/loja/ui/ModalConfirmarCompra";
 import {
   ModalResultadoCompra,
   type ResultadoCompra,
 } from "../../../../features/loja/ui/ModalResultadoCompra";
+import { useEquippedCosmeticsStore } from "../../../../features/profile-cosmetics";
 import { useStudentCoinsStore } from "../../../../features/student-coins/model/useStudentCoinsStore";
 import { CosmeticPreview } from "../../../../shared/ui/cosmetics";
+import { useAparenciaAvatar } from "../../../../shared/avatar/useAparenciaAvatar";
 
 // Aba ativa: "Todos", uma categoria especifica de item, ou o inventario do aluno.
 type Aba = "TODOS" | TipoItemLoja | "INVENTARIO" | "HISTORICO";
@@ -57,11 +62,13 @@ const CATEGORIAS: { key: Aba; label: string; icon: LucideIcon }[] = [
   { key: "TODOS", label: "Todos", icon: LayoutGrid },
   { key: "DICA", label: "Dicas", icon: Lightbulb },
   { key: "POTENCIALIZADOR", label: "Potencializadores", icon: Zap },
-  { key: "ICONE_PERFIL", label: "Ícones", icon: Smile },
   { key: "MOLDURA", label: "Molduras", icon: Frame },
-  { key: "AVATAR", label: "Avatares", icon: UserRound },
   { key: "TITULO", label: "Títulos", icon: BadgeCheck },
   { key: "PLANO_FUNDO", label: "Fundos", icon: Palette },
+  { key: "CABELO", label: "Cabelos", icon: Scissors },
+  { key: "ACESSORIO", label: "Acessórios", icon: Crown },
+  { key: "LUVA", label: "Luvas", icon: Hand },
+  { key: "CALCADO", label: "Calçados", icon: Footprints },
   { key: "INVENTARIO", label: "Meu Inventário", icon: Backpack },
   { key: "HISTORICO", label: "Histórico", icon: History },
 ];
@@ -106,6 +113,10 @@ export const LojaPage = () => {
   const [abaAtiva, setAbaAtiva] = useState<Aba>("TODOS");
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("asc");
   const [itemSelecionado, setItemSelecionado] = useState<ItemLoja | null>(null);
+  // Aparencia salva do aluno, usada para pre-visualizar itens de avatar no modal.
+  const { user } = useAuth();
+  const aparenciaAtual = useAparenciaAvatar(user?.id);
+  const fundoAtual = useEquippedCosmeticsStore((state) => state.cosmeticos.PLANO_FUNDO?.valor);
   const [itemParaUsar, setItemParaUsar] = useState<InventarioItem | null>(null);
   // Id em compra (trava os botoes), resultado da compra (modal), erro e recarga.
   const [comprandoId, setComprandoId] = useState<string | null>(null);
@@ -487,6 +498,8 @@ export const LojaPage = () => {
       {itemSelecionado && (
         <ModalConfirmarCompra
           item={itemSelecionado}
+          aparenciaAtual={aparenciaAtual}
+          fundoAtual={fundoAtual}
           saldoMoedas={saldoMoedas}
           comprando={comprandoId === itemSelecionado.id}
           onCancelar={() => setItemSelecionado(null)}
